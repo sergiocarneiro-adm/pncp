@@ -1,153 +1,227 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Leitor PNCP</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-<style>
-:root {
-  --bg:#f8fafc; --card:#fff; --text:#0f172a; --muted:#64748b;
-  --border:#e2e8f0; --primary:#2563eb; --success:#16a34a;
-  --warning:#d97706; --danger:#dc2626;
-}
-[data-theme="dark"] {
-  --bg:#0f172a; --card:#020617; --text:#e5e7eb;
-  --muted:#94a3b8; --border:#1e293b;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Inter;background:var(--bg);color:var(--text)}
-header{background:var(--card);border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0}
-.container{max-width:1300px;margin:auto;padding:2rem}
-button,input,select{padding:.6rem .75rem;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text)}
-button{cursor:pointer}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1rem}
-.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem}
-.stat span{font-size:.75rem;color:var(--muted)}
-.stat strong{font-size:1.2rem}
-.filters{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem}
-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;font-size:.85rem}
-th{background:#f1f5f9;color:var(--muted);padding:.75rem;text-align:left}
-[data-theme="dark"] th{background:#020617}
-td{padding:.75rem;border-bottom:1px solid var(--border);vertical-align:top}
-tr:hover{background:rgba(0,0,0,.03)}
-.badge{padding:.25rem .5rem;border-radius:999px;font-size:.7rem;font-weight:500}
-.success{background:#dcfce7;color:var(--success)}
-.warning{background:#fef3c7;color:var(--warning)}
-.danger{background:#fee2e2;color:var(--danger)}
-.neutral{background:#e5e7eb;color:#374151}
-.descricao{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}
-.descricao.expanded{-webkit-line-clamp:unset}
-a{color:var(--primary);text-decoration:none}
-.pagination{display:flex;justify-content:space-between;margin-top:1rem}
-.loading{padding:3rem;text-align:center;color:var(--muted)}
-.spinner{width:36px;height:36px;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin:auto}
-@keyframes spin{to{transform:rotate(360deg)}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leitor PNCP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f8fafc; --card: #fff; --text: #0f172a; --muted: #64748b;
+            --border: #e2e8f0; --primary: #2563eb; --success: #16a34a;
+            --warning: #d97706; --danger: #dc2626;
+        }
+        [data-theme="dark"] {
+            --bg: #0f172a; --card: #020617; --text: #e5e7eb;
+            --muted: #94a3b8; --border: #1e293b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg ); color: var(--text); transition: background .2s, color .2s; }
+        header { background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+        .container { max-width: 1300px; margin: auto; padding: 2rem; }
+        button, input, select { padding: .6rem .75rem; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-family: inherit; font-size: .9rem; }
+        button { cursor: pointer; transition: background .2s, opacity .2s; }
+        button:hover:not(:disabled) { background: #f1f5f9; }
+        [data-theme="dark"] button:hover:not(:disabled) { background: #1e293b; }
+        button:disabled { opacity: .5; cursor: not-allowed; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+        .stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
+        .stat span { font-size: .8rem; color: var(--muted); }
+        .stat strong { font-size: 1.3rem; display: block; margin-top: .25rem; }
+        .filters { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
+        .filters input { flex-grow: 1; min-width: 200px; }
+        table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; font-size: .85rem; transition: opacity .2s; }
+        th { background: #f1f5f9; color: var(--muted); padding: .75rem; text-align: left; font-weight: 600; text-transform: uppercase; font-size: .75rem; }
+        [data-theme="dark"] th { background: #020617; }
+        td { padding: .75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: rgba(0, 0, 0, .03); }
+        [data-theme="dark"] tbody tr:hover { background: rgba(255, 255, 255, .03); }
+        .badge { padding: .25rem .5rem; border-radius: 999px; font-size: .7rem; font-weight: 600; }
+        .success { background: #dcfce7; color: var(--success); }
+        .warning { background: #fef3c7; color: var(--warning); }
+        .danger { background: #fee2e2; color: var(--danger); }
+        .neutral { background: #e5e7eb; color: #374151; }
+        .descricao { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+        .descricao.expanded { -webkit-line-clamp: unset; }
+        a { color: var(--primary); text-decoration: none; font-weight: 500; }
+        a:hover { text-decoration: underline; }
+        .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; }
+        .loading { padding: 3rem; text-align: center; color: var(--muted); }
+        .spinner { width: 36px; height: 36px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
 </head>
-
 <body>
-<header>
-  <strong>Leitor PNCP</strong>
-  <button onclick="toggleTheme()">🌙 / ☀️</button>
-</header>
+    <header>
+        <strong>Leitor PNCP</strong>
+        <button id="theme-toggle">🌙 / ☀️</button>
+    </header>
 
-<div class="container" id="app">
-  <div class="loading"><div class="spinner"></div></div>
-</div>
+    <div class="container" id="app">
+        <div class="loading"><div class="spinner"></div></div>
+    </div>
 
-<script>
-const DATA_URL = './dados.json'; // 🔴 ALTERE AQUI
+    <script>
+        const DATA_URL = './dados.json'; // 🔴 ALTERE AQUI
+        const PER_PAGE = 20;
 
-let allData=[], stats={}, search='', statusFilter='all', page=1;
-const PER_PAGE=20;
+        const app = document.getElementById('app');
+        const themeToggle = document.getElementById('theme-toggle');
 
-document.documentElement.dataset.theme =
-  localStorage.theme || 'light';
+        let allData = [], stats = {}, search = '', statusFilter = 'all', page = 1;
+        let searchTimeout;
 
-fetchData();
+        // --- Funções de Inicialização ---
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.dataset.theme = savedTheme;
+        }
 
-function toggleTheme(){
-  const t=document.documentElement.dataset.theme==='dark'?'light':'dark';
-  document.documentElement.dataset.theme=t;
-  localStorage.theme=t;
-}
+        async function fetchData() {
+            renderLoading();
+            try {
+                const response = await fetch(`${DATA_URL}?v=${new Date().getTime()}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const result = await response.json();
+                allData = result.data || [];
+                stats = result.stats || {};
+                page = 1; // Reseta para a primeira página ao carregar novos dados
+                render();
+            } catch (error) {
+                console.error("Erro ao carregar JSON:", error);
+                renderError("Erro ao carregar os dados. Verifique o console para mais detalhes.");
+            }
+        }
 
-function fetchData(){
-  document.getElementById('app').innerHTML='<div class="loading"><div class="spinner"></div></div>';
-  fetch(DATA_URL)
-    .then(r=>r.json())
-    .then(r=>{allData=r.data||[];stats=r.stats||{};render()})
-    .catch(()=>document.getElementById('app').innerHTML='<div class="loading">Erro ao carregar JSON</div>');
-}
+        // --- Funções de Renderização ---
+        function render() {
+            const filteredData = getFilteredData();
+            const paginatedData = filteredData.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-function filtered(){
-  const t=search.toLowerCase();
-  return allData.filter(i=>{
-    const m=!t||[i.descricao,i.vencedor,i.compra].some(v=>(v||'').toLowerCase().includes(t));
-    const s=statusFilter==='all'||i.situacaoItem===statusFilter;
-    return m&&s;
-  });
-}
+            app.innerHTML = `
+                ${renderStats()}
+                ${renderFilters()}
+                ${renderTable(paginatedData, filteredData.length)}
+                ${renderPagination(filteredData.length)}
+            `;
+            addEventListeners();
+        }
 
-function badge(s){
-  if(s==='Homologado')return'<span class="badge success">Homologado</span>';
-  if(s==='Fracassado')return'<span class="badge danger">Fracassado</span>';
-  if(s==='Em andamento')return'<span class="badge warning">Em andamento</span>';
-  return`<span class="badge neutral">${s||'-'}</span>`;
-}
+        function renderLoading() {
+            app.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+        }
 
-function render(){
-  const data=filtered();
-  const view=data.slice((page-1)*PER_PAGE,page*PER_PAGE);
+        function renderError(message) {
+            app.innerHTML = `<div class="loading">${message}</div>`;
+        }
 
-  document.getElementById('app').innerHTML=`
-  <div class="stats">
-    <div class="stat"><span>Total Itens</span><strong>${stats.totalItens||0}</strong></div>
-    <div class="stat"><span>Valor Estimado</span><strong>R$ ${(stats.valorTotalEstimado||0).toLocaleString('pt-BR')}</strong></div>
-    <div class="stat"><span>Homologados</span><strong>${stats.itensHomologados||0}</strong></div>
-    <div class="stat"><span>Fracassados</span><strong>${stats.itensFracassados||0}</strong></div>
-  </div>
+        function renderStats() {
+            return `
+            <div class="stats">
+                <div class="stat"><span>Total Itens</span><strong>${stats.totalItens?.toLocaleString('pt-BR') || 0}</strong></div>
+                <div class="stat"><span>Valor Estimado</span><strong>R$ ${stats.valorTotalEstimado?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}</strong></div>
+                <div class="stat"><span>Homologados</span><strong>${stats.itensHomologados?.toLocaleString('pt-BR') || 0}</strong></div>
+                <div class="stat"><span>Fracassados</span><strong>${stats.itensFracassados?.toLocaleString('pt-BR') || 0}</strong></div>
+            </div>`;
+        }
 
-  <div class="filters">
-    <input placeholder="Buscar..." oninput="search=this.value.trim();page=1;spinRender()">
-    <select onchange="statusFilter=this.value;page=1;spinRender()">
-      <option value="all">Todos status</option>
-      ${[...new Set(allData.map(i=>i.situacaoItem).filter(Boolean))].map(s=>`<option>${s}</option>`).join('')}
-    </select>
-    <button onclick="fetchData()">Atualizar</button>
-  </div>
+        function renderFilters() {
+            const statusOptions = [...new Set(allData.map(i => i.situacaoItem).filter(Boolean))]
+                .map(s => `<option value="${s}" ${statusFilter === s ? 'selected' : ''}>${s}</option>`).join('');
+            return `
+            <div class="filters">
+                <input id="search-input" placeholder="Buscar por descrição, vencedor ou nº da compra..." value="${search}">
+                <select id="status-select">
+                    <option value="all">Todos status</option>
+                    ${statusOptions}
+                </select>
+                <button id="refresh-btn">Atualizar</button>
+            </div>`;
+        }
 
-  <table>
-    <thead><tr>
-      <th>Compra</th><th>Item</th><th>Descrição</th><th>Vencedor</th><th>Status</th><th>Link</th>
-    </tr></thead>
-    <tbody>
-      ${view.length?view.map(i=>`
-        <tr>
-          <td>${i.compra||'-'}</td>
-          <td>${i.itemNo||'-'}</td>
-          <td><div class="descricao" onclick="this.classList.toggle('expanded')">${i.descricao||'-'}</div></td>
-          <td>${i.vencedor||'-'}</td>
-          <td>${badge(i.situacaoItem)}</td>
-          <td>${i.linkPNCP?`<a href="${i.linkPNCP}" target="_blank">Abrir</a>`:'-'}</td>
-        </tr>`).join(''):`<tr><td colspan="6" class="loading">Nenhum item</td></tr>`}
-    </tbody>
-  </table>
+        function renderTable(data, totalFiltered) {
+            const tableRows = data.length ? data.map(item => `
+                <tr>
+                    <td>${item.compra || '-'}</td>
+                    <td>${item.itemNo || '-'}</td>
+                    <td><div class="descricao" onclick="this.classList.toggle('expanded')">${item.descricao || '-'}</div></td>
+                    <td>${item.vencedor || '-'}</td>
+                    <td>${getBadge(item.situacaoItem)}</td>
+                    <td>${item.linkPNCP ? `<a href="${item.linkPNCP}" target="_blank" rel="noopener noreferrer">Abrir</a>` : '-'}</td>
+                </tr>`).join('') : `<tr><td colspan="6" class="loading">Nenhum item encontrado</td></tr>`;
 
-  <div class="pagination">
-    <button onclick="page--;spinRender()" ${page===1?'disabled':''}>Anterior</button>
-    <span>Página ${page}</span>
-    <button onclick="page++;spinRender()" ${(page*PER_PAGE)>=data.length?'disabled':''}>Próxima</button>
-  </div>`;
-}
+            return `
+            <table>
+                <thead><tr>
+                    <th>Compra</th><th>Item</th><th>Descrição</th><th>Vencedor</th><th>Status</th><th>Link</th>
+                </tr></thead>
+                <tbody>${tableRows}</tbody>
+            </table>`;
+        }
 
-function spinRender(){
-  document.getElementById('app').querySelector('table').style.opacity=.4;
-  setTimeout(render,200);
-}
-</script>
+        function renderPagination(totalItems) {
+            const totalPages = Math.ceil(totalItems / PER_PAGE);
+            return `
+            <div class="pagination">
+                <button id="prev-page" ${page === 1 ? 'disabled' : ''}>Anterior</button>
+                <span>Página ${page} de ${totalPages || 1}</span>
+                <button id="next-page" ${page >= totalPages ? 'disabled' : ''}>Próxima</button>
+            </div>`;
+        }
+
+        // --- Funções de Lógica e Eventos ---
+        function addEventListeners() {
+            document.getElementById('search-input').addEventListener('input', handleSearch);
+            document.getElementById('status-select').addEventListener('change', handleStatusFilter);
+            document.getElementById('refresh-btn').addEventListener('click', fetchData);
+            document.getElementById('prev-page')?.addEventListener('click', () => { if (page > 1) { page--; render(); } });
+            document.getElementById('next-page')?.addEventListener('click', () => { page++; render(); });
+        }
+
+        function handleSearch(event) {
+            search = event.target.value.trim();
+            page = 1;
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => render(), 300); // Debounce
+        }
+
+        function handleStatusFilter(event) {
+            statusFilter = event.target.value;
+            page = 1;
+            render();
+        }
+
+        function getFilteredData() {
+            const searchTerm = search.toLowerCase();
+            return allData.filter(item => {
+                const matchesSearch = !searchTerm || [item.descricao, item.vencedor, item.compra]
+                    .some(val => (val || '').toLowerCase().includes(searchTerm));
+                const matchesStatus = statusFilter === 'all' || item.situacaoItem === statusFilter;
+                return matchesSearch && matchesStatus;
+            });
+        }
+
+        function getBadge(status) {
+            const badges = {
+                'Homologado': 'success',
+                'Fracassado': 'danger',
+                'Em andamento': 'warning'
+            };
+            const type = badges[status] || 'neutral';
+            return `<span class="badge ${type}">${status || '-'}</span>`;
+        }
+
+        function toggleTheme() {
+            const newTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+            document.documentElement.dataset.theme = newTheme;
+            localStorage.setItem('theme', newTheme);
+        }
+
+        // --- Inicialização ---
+        themeToggle.addEventListener('click', toggleTheme);
+        initializeTheme();
+        fetchData();
+    </script>
 </body>
 </html>
