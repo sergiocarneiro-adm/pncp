@@ -11,7 +11,6 @@
             --border: #e2e8f0; --primary: #2563eb; --success: #16a34a;
             --warning: #d97706; --danger: #dc2626;
         }
-        /* Paleta de cores aprimorada para o Modo Escuro */
         [data-theme="dark"] {
             --bg: #020617; --card: #0f172a; --text: #e2e8f0;
             --muted: #94a3b8; --border: #1e293b; --primary: #3b82f6;
@@ -36,25 +35,33 @@
         table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; font-size: .85rem; transition: opacity .2s; }
         th { background: #f1f5f9; color: var(--muted); padding: .75rem; text-align: left; font-weight: 600; text-transform: uppercase; font-size: .75rem; }
         [data-theme="dark"] th { background: #1e293b; }
-        td { padding: .75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
-        tbody tr:last-child td { border-bottom: none; }
-        tbody tr:hover { background: rgba(0, 0, 0, .03); }
-        [data-theme="dark"] tbody tr:hover { background: rgba(255, 255, 255, .03); }
+        td { padding: .75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tbody tr:not(.details-row):hover { background: rgba(0, 0, 0, .03); }
+        [data-theme="dark"] tbody tr:not(.details-row):hover { background: rgba(255, 255, 255, .03); }
         .badge { padding: .3rem .6rem; border-radius: 999px; font-size: .7rem; font-weight: 600; }
-        /* Cores das badges ajustadas para o modo escuro */
         .success { background: #16a34a20; color: #22c55e; }
         .warning { background: #d9770620; color: #f59e0b; }
         .danger { background: #dc262620; color: #ef4444; }
         .neutral { background: #e5e7eb; color: #374151; }
         [data-theme="dark"] .neutral { background: #374151; color: #d1d5db; }
-        .descricao { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
-        .descricao.expanded { -webkit-line-clamp: unset; }
         a { color: var(--primary); text-decoration: none; font-weight: 500; }
         a:hover { text-decoration: underline; }
         .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; }
         .loading { padding: 3rem; text-align: center; color: var(--muted); }
         .spinner { width: 36px; height: 36px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: auto; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Estilos da Linha Expansível */
+        .details-row { display: none; }
+        .details-row.show { display: table-row; }
+        .details-row td { background: #f9fafb; padding: 1rem 1.5rem; }
+        [data-theme="dark"] .details-row td { background: #0b1120; }
+        .details-content { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
+        .details-content div { display: flex; flex-direction: column; }
+        .details-content span { color: var(--muted); font-size: .75rem; margin-bottom: .25rem; text-transform: uppercase; }
+        .details-content strong { font-weight: 500; }
+        .toggle-details { cursor: pointer; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #f1f5f9; color: var(--muted); font-weight: bold; }
+        [data-theme="dark"] .toggle-details { background: #1e293b; }
     </style>
 </head>
 <body>
@@ -74,7 +81,7 @@
         const app = document.getElementById('app');
         const themeToggle = document.getElementById('theme-toggle');
 
-        let allData = [], stats = {}, search = '', statusFilter = 'all', page = 1;
+        let allData = [], stats = {}, search = '', statusFilter = 'all', yearFilter = 'all', page = 1;
 
         function initializeTheme() {
             const savedTheme = localStorage.getItem('theme') || 'light';
@@ -126,14 +133,22 @@
         function renderFilters() {
             const statusOptions = [...new Set(allData.map(i => i.situacaoItem).filter(Boolean))]
                 .map(s => `<option value="${s}" ${statusFilter === s ? 'selected' : ''}>${s}</option>`).join('');
+            
+            const yearOptions = [...new Set(allData.map(i => i.ano).filter(Boolean))].sort((a, b) => b - a)
+                .map(y => `<option value="${y}" ${yearFilter == y ? 'selected' : ''}>${y}</option>`).join('');
+
             return `
             <div class="filters">
                 <div class="search-wrapper">
                     <input id="search-input" placeholder="Buscar..." value="${search}">
                     <button id="search-btn">Buscar</button>
                 </div>
+                <select id="year-select">
+                    <option value="all">Todos os Anos</option>
+                    ${yearOptions}
+                </select>
                 <select id="status-select">
-                    <option value="all">Todos status</option>
+                    <option value="all">Todos os Status</option>
                     ${statusOptions}
                 </select>
                 <button id="refresh-btn">Atualizar Dados</button>
@@ -141,20 +156,36 @@
         }
 
         function renderTable(data) {
-            const tableRows = data.length ? data.map(item => `
-                <tr>
+            const tableRows = data.length ? data.map((item, index) => `
+                <tr data-row-id="${index}">
+                    <td><span class="toggle-details" onclick="toggleDetails(${index})">+</span></td>
+                    <td>${item.dataPublicacao ? new Date(item.dataPublicacao).toLocaleDateString('pt-BR') : '-'}</td>
                     <td>${item.compra || '-'}</td>
-                    <td>${item.itemNo || '-'}</td>
-                    <td><div class="descricao" onclick="this.classList.toggle('expanded')">${item.descricao || '-'}</div></td>
-                    <td>${item.vencedor || '-'}</td>
+                    <td>${item.descricao || '-'}</td>
                     <td>${getBadge(item.situacaoItem)}</td>
                     <td>${item.linkPNCP ? `<a href="${item.linkPNCP}" target="_blank" rel="noopener noreferrer">Abrir</a>` : '-'}</td>
-                </tr>`).join('') : `<tr><td colspan="6" class="loading">Nenhum item encontrado</td></tr>`;
+                </tr>
+                <tr class="details-row" id="details-${index}">
+                    <td colspan="6">
+                        <div class="details-content">
+                            <div><span>Objeto</span><strong>${item.objeto || 'Não informado'}</strong></div>
+                            <div><span>Vencedor</span><strong>${item.vencedor || 'Não informado'}</strong></div>
+                            <div><span>Item Nº</span><strong>${item.itemNo || '-'}</strong></div>
+                            <div><span>Ano</span><strong>${item.ano || '-'}</strong></div>
+                        </div>
+                    </td>
+                </tr>
+            `).join('') : `<tr><td colspan="6" class="loading">Nenhum item encontrado</td></tr>`;
 
             return `
             <table>
                 <thead><tr>
-                    <th>Compra</th><th>Item</th><th>Descrição</th><th>Vencedor</th><th>Status</th><th>Link</th>
+                    <th></th>
+                    <th>Publicação</th>
+                    <th>Compra</th>
+                    <th>Descrição</th>
+                    <th>Status</th>
+                    <th>Link</th>
                 </tr></thead>
                 <tbody>${tableRows}</tbody>
             </table>`;
@@ -174,6 +205,7 @@
             document.getElementById('search-btn').addEventListener('click', handleSearch);
             document.getElementById('search-input').addEventListener('keyup', (e) => { if (e.key === 'Enter') handleSearch(); });
             document.getElementById('status-select').addEventListener('change', handleStatusFilter);
+            document.getElementById('year-select').addEventListener('change', handleYearFilter);
             document.getElementById('refresh-btn').addEventListener('click', fetchData);
             document.getElementById('prev-page')?.addEventListener('click', () => { if (page > 1) { page--; render(); } });
             document.getElementById('next-page')?.addEventListener('click', () => { page++; render(); });
@@ -191,13 +223,23 @@
             render();
         }
 
+        function handleYearFilter(event) {
+            yearFilter = event.target.value;
+            page = 1;
+            render();
+        }
+
         function getFilteredData() {
             const searchTerm = search.toLowerCase();
             return allData.filter(item => {
-                const matchesSearch = !searchTerm || [item.descricao, item.vencedor, item.compra]
-                    .some(val => (val || '').toLowerCase().includes(searchTerm));
+                const matchesSearch = !searchTerm || [
+                    item.descricao, item.vencedor, item.compra, item.ano, item.objeto, item.itemNo
+                ].some(val => (val || '').toString().toLowerCase().includes(searchTerm));
+                
                 const matchesStatus = statusFilter === 'all' || item.situacaoItem === statusFilter;
-                return matchesSearch && matchesStatus;
+                const matchesYear = yearFilter === 'all' || item.ano == yearFilter;
+
+                return matchesSearch && matchesStatus && matchesYear;
             });
         }
 
@@ -211,6 +253,15 @@
             const newTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
             document.documentElement.dataset.theme = newTheme;
             localStorage.setItem('theme', newTheme);
+        }
+
+        function toggleDetails(index) {
+            const detailsRow = document.getElementById(`details-${index}`);
+            const toggleButton = document.querySelector(`[data-row-id="${index}"] .toggle-details`);
+            if (detailsRow) {
+                detailsRow.classList.toggle('show');
+                toggleButton.textContent = detailsRow.classList.contains('show') ? '−' : '+';
+            }
         }
 
         themeToggle.addEventListener('click', toggleTheme);
