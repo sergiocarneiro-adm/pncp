@@ -149,15 +149,25 @@ class PNCPImporter:
 FILE_NAME = 'dados.json'
 
 def main():
-    dados_existentes = []
-    data_inicio = "20260101"
+    dados_carregados = []
+    is_dict_format = False
+    full_json_data = {}
+    data_inicio = "20240101"
 
     if os.path.exists(FILE_NAME):
         with open(FILE_NAME, 'r', encoding='utf-8') as f:
             try:
-                dados_existentes = json.load(f)
-                if dados_existentes:
-                    datas_str = [c.get('dataPublicacao', '') for c in dados_existentes if c.get('dataPublicacao')]
+                content = json.load(f)
+                if isinstance(content, list):
+                    dados_carregados = content
+                    is_dict_format = False
+                elif isinstance(content, dict):
+                    full_json_data = content
+                    dados_carregados = content.get('data', [])
+                    is_dict_format = True
+                
+                if dados_carregados:
+                    datas_str = [c.get('dataPublicacao', '') for c in dados_carregados if c.get('dataPublicacao')]
                     
                     datas_convertidas = []
                     for d in datas_str:
@@ -186,7 +196,17 @@ def main():
     novos_dados = importer.importar_tudo(data_inicio, data_hoje)
 
     if novos_dados:
-        dados_finais = dados_existentes + novos_dados
+        if is_dict_format:
+            # Se for formato de dicionário, atualiza a lista dentro da chave 'data'
+            full_json_data['data'] = dados_carregados + novos_dados
+            # Opcional: atualizar metadados se necessário
+            full_json_data['totalRegistros'] = len(full_json_data['data'])
+            full_json_data['geradoEm'] = datetime.now().isoformat()
+            dados_finais = full_json_data
+        else:
+            # Se for formato de lista simples
+            dados_finais = dados_carregados + novos_dados
+            
         with open(FILE_NAME, 'w', encoding='utf-8') as f:
             json.dump(dados_finais, f, indent=4, ensure_ascii=False)
         print(f"\nSucesso! {len(novos_dados)} novos registros adicionados.")
@@ -195,4 +215,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
