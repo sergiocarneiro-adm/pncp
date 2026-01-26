@@ -2,9 +2,16 @@ import requests
 import json
 import time
 import os
+import locale
 from datetime import datetime, timedelta
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
+# Tenta configurar para inglês para garantir que a data saia como "Mon Dec"
+try:
+    locale.setlocale(locale.LC_TIME, 'en_US.UTF-8')
+except:
+    pass 
 
 class PNCPImporter:
     BASE_URL_CONSULTA = "https://pncp.gov.br/api/consulta"
@@ -89,8 +96,16 @@ class PNCPImporter:
             cnpj_orgao = contratacao['orgaoEntidade']['cnpj']
             ano = contratacao['anoCompra']
             sequencial = contratacao['sequencialCompra']
-            print(f"  -> Detalhando {ano}/{sequencial}...")
             
+            # Formata a data para o padrão do seu JSON antigo
+            # "Mon Dec 29 2025 17:14:50 GMT-0300 (Brasilia Standard Time)"
+            dt_raw = contratacao.get('dataPublicacaoPncp', '')
+            if dt_raw:
+                dt_obj = datetime.fromisoformat(dt_raw.replace('Z', '+00:00'))
+                # Simula o formato do Google Sheets
+                contratacao['dataPublicacao'] = dt_obj.strftime("%a %b %d %Y %H:%M:%S GMT-0300 (Brasilia Standard Time)")
+            
+            print(f"  -> Detalhando {ano}/{sequencial}...")
             itens = self.obter_itens_contratacao(cnpj_orgao, ano, sequencial)
             for item in itens:
                 num = item.get('numeroItem')
@@ -107,14 +122,12 @@ class PNCPImporter:
         todos_resultados = []
         modalidades = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13]
         
-        # Converte para objetos datetime para iterar em blocos
         atual = datetime.strptime(d_ini, "%Y%m%d")
         fim_obj = datetime.strptime(d_fim, "%Y%m%d")
         
         while atual <= fim_obj:
             bloco_fim = min(atual + timedelta(days=14), fim_obj)
-            s_ini = atual.strftime("%Y%m%d")
-            s_fim = bloco_fim.strftime("%Y%m%d")
+            s_ini, s_fim = atual.strftime("%Y%m%d"), bloco_fim.strftime("%Y%m%d")
             print(f"\n--- Periodo: {s_ini} a {s_fim} ---")
             
             for mod in modalidades:
@@ -132,7 +145,7 @@ class PNCPImporter:
             atual = bloco_fim + timedelta(days=1)
         return todos_resultados
 
-# --- LOGICA DE ATUALIZACAO ---
+# --- LOGICA PRINCIPAL ---
 FILE_NAME = 'dados.json'
 
 def main():
@@ -144,29 +157,39 @@ def main():
             try:
                 dados_existentes = json.load(f)
                 if dados_existentes:
-                    # Busca a última data presente no JSON
-                    datas = [c.get('dataPublicacaoPncp', '2024-01-01') for c in dados_existentes]
-                    ultima = max(datas).split('T')[0].replace("-", "")
-                    # Começa um dia depois da última data salva
-                    data_inicio = (datetime.strptime(ultima, "%Y%m%d") + timedelta(days=1)).strftime("%Y%m%d")
-            except: pass
+                    datas_str = [c.get('dataPublicacao', '') for c in dados_existentes if c.get('dataPublicacao')]
+                    
+                    datas_convertidas = []
+                    for d in datas_str:
+                        try:
+                            # Extrai "Dec 29 2025" da string longa
+                            partes = d.split(' ')
+                            data_limpa = f"{partes[1]} {partes[2]} {partes[3]}"
+                            dt = datetime.strptime(data_limpa, "%b %d %Y")
+                            datas_convertidas.append(dt)
+                        except: continue
+                    
+                    if datas_convertidas:
+                        ultima_dt = max(datas_convertidas)
+                        data_inicio = (ultima_dt + timedelta(days=1)).strftime("%Y%m%d")
+            except Exception as e:
+                print(f"Erro ao ler JSON: {e}")
 
     data_hoje = datetime.now().strftime("%Y%m%d")
     
     if data_inicio > data_hoje:
-        print("Os dados ja estao atualizados!")
+        print(f"Dados ja estao atualizados ate {data_inicio}. Nada a fazer.")
         return
 
-    print(f"Sincronizando de {data_inicio} ate {data_hoje}...")
+    print(f"Iniciando sincronizacao de {data_inicio} ate {data_hoje}...")
     importer = PNCPImporter()
     novos_dados = importer.importar_tudo(data_inicio, data_hoje)
 
     if novos_dados:
-        # Mesclar mantendo o que já existia
         dados_finais = dados_existentes + novos_dados
         with open(FILE_NAME, 'w', encoding='utf-8') as f:
             json.dump(dados_finais, f, indent=4, ensure_ascii=False)
-        print(f"\nSucesso! {len(novos_dados)} novos registros adicionados ao dados.json.")
+        print(f"\nSucesso! {len(novos_dados)} novos registros adicionados.")
     else:
         print("\nNenhuma nova contratacao encontrada.")
 
