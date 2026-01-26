@@ -150,7 +150,7 @@ FILE_NAME = 'dados.json'
 
 def main():
     dados_existentes = []
-    data_inicio = "20240101"
+    data_inicio = "20260101"
 
     if os.path.exists(FILE_NAME):
         with open(FILE_NAME, 'r', encoding='utf-8') as f:
@@ -195,3 +195,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
