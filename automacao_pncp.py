@@ -91,32 +91,88 @@ class PNCPImporter:
         if isinstance(resultados, dict): return [resultados]
         return []
 
+    def formatar_para_html(self, contratacao, item):
+        """Achata a estrutura para manter compatibilidade com o HTML antigo"""
+        try:
+            # Formata datas
+            dt_pub_raw = contratacao.get('dataPublicacaoPncp', '')
+            dt_pub_fmt = ""
+            if dt_pub_raw:
+                dt_obj = datetime.fromisoformat(dt_pub_raw.replace('Z', '+00:00'))
+                dt_pub_fmt = dt_obj.strftime("%a %b %d %Y %H:%M:%S GMT-0300 (Brasilia Standard Time)")
+
+            # Pega vencedor do primeiro resultado se existir
+            vencedor_nome = "SEM RESULTADO"
+            vencedor_cnpj = ""
+            valor_unit_homologado = 0
+            valor_total_homologado = 0
+            qtd_homologada = 0
+            data_resultado_fmt = ""
+
+            resultados = item.get('resultados_vencedores', [])
+            if resultados:
+                res = resultados[0]
+                vencedor_nome = res.get('nomeRazaoSocialFornecedor', "SEM RESULTADO")
+                vencedor_cnpj = res.get('niFornecedor', "")
+                valor_unit_homologado = res.get('valorUnitarioHomologado', 0)
+                valor_total_homologado = res.get('valorTotalHomologado', 0)
+                qtd_homologada = res.get('quantidadeHomologada', 0)
+                dt_res_raw = res.get('dataResultado', '')
+                if dt_res_raw:
+                    dt_res_obj = datetime.fromisoformat(dt_res_raw.replace('Z', '+00:00'))
+                    data_resultado_fmt = dt_res_obj.strftime("%a %b %d %Y %H:%M:%S GMT-0300 (Brasilia Standard Time)")
+
+            return {
+                "orgao": contratacao.get('orgaoEntidade', {}).get('razaoSocial', ""),
+                "ano": contratacao.get('anoCompra'),
+                "compra": contratacao.get('numeroCompra', ""),
+                "modalidade": contratacao.get('modalidadeNome', ""),
+                "objeto": contratacao.get('objetoCompra', ""),
+                "itemNo": item.get('numeroItem'),
+                "descricao": item.get('descricao', ""),
+                "quantidade": item.get('quantidade', 0),
+                "unidade": item.get('unidadeMedida', ""),
+                "valorUnitEstimado": item.get('valorUnitarioEstimado', 0),
+                "valorTotalEstimado": item.get('valorTotal', 0),
+                "vencedor": vencedor_nome,
+                "cnpjVencedor": vencedor_cnpj,
+                "valorUnitHomologado": valor_unit_homologado,
+                "valorTotalHomologado": valor_total_homologado,
+                "qtdHomologada": qtd_homologada,
+                "situacaoItem": item.get('situacaoCompraItemNome', ""),
+                "linkPNCP": f"https://pncp.gov.br/app/editais/{contratacao.get('orgaoEntidade', {}).get('cnpj')}/{contratacao.get('anoCompra')}/{contratacao.get('sequencialCompra')}",
+                "processo": contratacao.get('processo', ""),
+                "dataPublicacao": dt_pub_fmt,
+                "dataResultado": data_resultado_fmt
+            }
+        except Exception as e:
+            print(f"Erro na formatação: {e}")
+            return None
+
     def processar_contratacao_completa(self, contratacao):
         try:
             cnpj_orgao = contratacao['orgaoEntidade']['cnpj']
             ano = contratacao['anoCompra']
             sequencial = contratacao['sequencialCompra']
             
-            # Formata a data para o padrão do seu JSON antigo
-            # "Mon Dec 29 2025 17:14:50 GMT-0300 (Brasilia Standard Time)"
-            dt_raw = contratacao.get('dataPublicacaoPncp', '')
-            if dt_raw:
-                dt_obj = datetime.fromisoformat(dt_raw.replace('Z', '+00:00'))
-                # Simula o formato do Google Sheets
-                contratacao['dataPublicacao'] = dt_obj.strftime("%a %b %d %Y %H:%M:%S GMT-0300 (Brasilia Standard Time)")
-            
             print(f"  -> Detalhando {ano}/{sequencial}...")
             itens = self.obter_itens_contratacao(cnpj_orgao, ano, sequencial)
+            
+            itens_achatados = []
             for item in itens:
                 num = item.get('numeroItem')
                 if num:
                     item['resultados_vencedores'] = self.obter_resultados_item(cnpj_orgao, ano, sequencial, num)
+                
+                # Cria uma entrada para cada item no formato antigo
+                item_formatado = self.formatar_para_html(contratacao, item)
+                if item_formatado:
+                    itens_achatados.append(item_formatado)
             
-            contratacao['itens_detalhados'] = itens
-            return contratacao
+            return itens_achatados
         except Exception as e:
             print(f"Erro no detalhamento: {e}")
-            return contratacao
+            return []
 
     def importar_tudo(self, d_ini, d_fim):
         todos_resultados = []
@@ -137,8 +193,8 @@ class PNCPImporter:
                     if not dados or 'data' not in dados or not dados['data']: break
                     
                     for contratacao in dados['data']:
-                        completa = self.processar_contratacao_completa(contratacao)
-                        todos_resultados.append(completa)
+                        novos_itens = self.processar_contratacao_completa(contratacao)
+                        todos_resultados.extend(novos_itens)
                     
                     if pagina >= dados.get('totalPaginas', 1): break
                     pagina += 1
@@ -152,7 +208,7 @@ def main():
     dados_carregados = []
     is_dict_format = False
     full_json_data = {}
-    data_inicio = "20260101"
+    data_inicio = "20240101"
 
     if os.path.exists(FILE_NAME):
         with open(FILE_NAME, 'r', encoding='utf-8') as f:
@@ -197,14 +253,11 @@ def main():
 
     if novos_dados:
         if is_dict_format:
-            # Se for formato de dicionário, atualiza a lista dentro da chave 'data'
             full_json_data['data'] = dados_carregados + novos_dados
-            # Opcional: atualizar metadados se necessário
             full_json_data['totalRegistros'] = len(full_json_data['data'])
             full_json_data['geradoEm'] = datetime.now().isoformat()
             dados_finais = full_json_data
         else:
-            # Se for formato de lista simples
             dados_finais = dados_carregados + novos_dados
             
         with open(FILE_NAME, 'w', encoding='utf-8') as f:
@@ -215,4 +268,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
