@@ -18,23 +18,25 @@
             --highlight-bg: #422006; --highlight-text: #fef08a;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg ); color: var(--text); transition: background .2s, color .2s; }
-        header { background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); transition: background .2s, color .2s; }
+        header { background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .container { max-width: 1300px; margin: auto; padding: 2rem; }
-        button, input, select { padding: .6rem .75rem; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-family: inherit; font-size: .9rem; }
-        button { cursor: pointer; transition: background .2s, opacity .2s; }
-        button:hover:not(:disabled) { background: #f1f5f9; }
+        button, input, select { padding: .6rem .75rem; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-family: inherit; font-size: .9rem; transition: all .2s; }
+        button { cursor: pointer; }
+        button:hover:not(:disabled) { background: #f1f5f9; border-color: var(--primary); }
         [data-theme="dark"] button:hover:not(:disabled) { background: #1e293b; }
         button:disabled { opacity: .5; cursor: not-allowed; }
+        button.active { background: var(--primary); color: white; border-color: var(--primary); }
         .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
-        .stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
+        .stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all .2s; }
+        .stat:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .stat span { font-size: .8rem; color: var(--muted); }
         .stat strong { font-size: 1.3rem; display: block; margin-top: .25rem; }
         .filters { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
         .filters .search-wrapper { display: flex; flex-grow: 1; }
         .filters input { border-top-right-radius: 0; border-bottom-right-radius: 0; min-width: 150px; }
         .filters #search-btn { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none; }
-        table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; font-size: .85rem; transition: opacity .2s; }
+        table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; font-size: .85rem; transition: opacity .2s; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         th { background: #f1f5f9; color: var(--muted); padding: .75rem; text-align: left; font-weight: 600; text-transform: uppercase; font-size: .75rem; }
         [data-theme="dark"] th { background: #1e293b; }
         td { padding: .75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
@@ -48,7 +50,8 @@
         [data-theme="dark"] .neutral { background: #374151; color: #d1d5db; }
         a { color: var(--primary); text-decoration: none; font-weight: 500; }
         a:hover { text-decoration: underline; }
-        .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; }
+        .pagination { display: flex; justify-content: center; align-items: center; gap: .5rem; margin-top: 2rem; flex-wrap: wrap; }
+        .pagination-info { text-align: center; margin-bottom: 1rem; font-size: .9rem; color: var(--muted); }
         .loading { padding: 3rem; text-align: center; color: var(--muted); }
         .spinner { width: 36px; height: 36px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: auto; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -60,9 +63,9 @@
         .details-content div { display: flex; flex-direction: column; }
         .details-content span { color: var(--muted); font-size: .75rem; margin-bottom: .25rem; text-transform: uppercase; }
         .details-content strong { font-weight: 500; word-break: break-word; }
-        .toggle-details { cursor: pointer; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #f1f5f9; color: var(--muted); font-weight: bold; }
+        .toggle-details { cursor: pointer; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #f1f5f9; color: var(--muted); font-weight: bold; transition: all .2s; }
         [data-theme="dark"] .toggle-details { background: #1e293b; }
-        /* Estilo para o highlight */
+        .toggle-details:hover { background: var(--primary); color: white; }
         mark { background-color: var(--highlight-bg); color: var(--highlight-text); padding: 1px 2px; border-radius: 3px; }
     </style>
 </head>
@@ -128,6 +131,7 @@
             app.innerHTML = `
                 ${renderStats()}
                 ${renderFilters()}
+                ${renderPaginationInfo(filteredData.length)}
                 ${renderTable(paginatedData)}
                 ${renderPagination(filteredData.length)}
             `;
@@ -172,6 +176,13 @@
             </div>`;
         }
 
+        function renderPaginationInfo(totalItems) {
+            const totalPages = Math.ceil(totalItems / PER_PAGE);
+            const startIdx = (page - 1) * PER_PAGE + 1;
+            const endIdx = Math.min(page * PER_PAGE, totalItems);
+            return `<div class="pagination-info">Mostrando ${startIdx} a ${endIdx} de ${totalItems} resultados (Página ${page} de ${totalPages})</div>`;
+        }
+
         function renderTable(data) {
             const tableRows = data.length ? data.map((item, index) => `
                 <tr data-row-id="${index}">
@@ -210,12 +221,46 @@
 
         function renderPagination(totalItems) {
             const totalPages = Math.ceil(totalItems / PER_PAGE);
-            return `
-            <div class="pagination">
-                <button id="prev-page" ${page === 1 ? 'disabled' : ''}>Anterior</button>
-                <span>Página ${page} de ${totalPages || 1}</span>
-                <button id="next-page" ${page >= totalPages ? 'disabled' : ''}>Próxima</button>
-            </div>`;
+            if (totalPages <= 1) return '';
+
+            let paginationButtons = '';
+            const maxButtons = 7;
+            let start = Math.max(1, page - Math.floor(maxButtons / 2));
+            let end = Math.min(totalPages, start + maxButtons - 1);
+
+            if (end - start + 1 < maxButtons) {
+                start = Math.max(1, end - maxButtons + 1);
+            }
+
+            // Botão Primeira Página
+            paginationButtons += `<button id="first-page" ${page === 1 ? 'disabled' : ''}>« Primeira</button>`;
+
+            // Botão Anterior
+            paginationButtons += `<button id="prev-page" ${page === 1 ? 'disabled' : ''}>‹ Anterior</button>`;
+
+            // Números de página
+            if (start > 1) {
+                paginationButtons += `<button onclick="goToPage(1)">1</button>`;
+                if (start > 2) paginationButtons += `<span style="padding: 0 .5rem; color: var(--muted);">...</span>`;
+            }
+
+            for (let i = start; i <= end; i++) {
+                const isActive = i === page;
+                paginationButtons += `<button onclick="goToPage(${i})" class="${isActive ? 'active' : ''}">${i}</button>`;
+            }
+
+            if (end < totalPages) {
+                if (end < totalPages - 1) paginationButtons += `<span style="padding: 0 .5rem; color: var(--muted);">...</span>`;
+                paginationButtons += `<button onclick="goToPage(${totalPages})">${totalPages}</button>`;
+            }
+
+            // Botão Próxima
+            paginationButtons += `<button id="next-page" ${page >= totalPages ? 'disabled' : ''}>Próxima ›</button>`;
+
+            // Botão Última Página
+            paginationButtons += `<button id="last-page" ${page >= totalPages ? 'disabled' : ''}>Última »</button>`;
+
+            return `<div class="pagination">${paginationButtons}</div>`;
         }
 
         // --- Funções de Lógica e Eventos ---
@@ -227,10 +272,16 @@
             document.getElementById('refresh-btn').addEventListener('click', fetchData);
             document.getElementById('prev-page')?.addEventListener('click', () => { if (page > 1) { page--; render(); } });
             document.getElementById('next-page')?.addEventListener('click', () => { page++; render(); });
+            document.getElementById('first-page')?.addEventListener('click', () => { page = 1; render(); });
+            document.getElementById('last-page')?.addEventListener('click', () => { 
+                const filteredData = getFilteredData();
+                page = Math.ceil(filteredData.length / PER_PAGE); 
+                render(); 
+            });
         }
 
         function handleSearch() {
-            search = document.getElementById('search-input').value; // Não usar .trim() aqui para preservar espaços se forem intencionais na busca
+            search = document.getElementById('search-input').value;
             page = 1;
             render();
         }
@@ -284,6 +335,12 @@
                 detailsRow.classList.toggle('show');
                 toggleButton.textContent = detailsRow.classList.contains('show') ? '−' : '+';
             }
+        }
+
+        function goToPage(pageNum) {
+            page = pageNum;
+            render();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         themeToggle.addEventListener('click', toggleTheme);
