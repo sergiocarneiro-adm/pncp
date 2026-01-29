@@ -20,7 +20,7 @@ class PNCPImporter:
     def __init__(self, cnpj="13650403000128"):
         self.cnpj = cnpj
         self.session = self.setup_session()
-        self.cooldown_time = 1.0
+        self.cooldown_time = 0.5 # Reduzi um pouco para ser mais rápido no refresh
 
     def setup_session(self):
         session = requests.Session()
@@ -48,6 +48,11 @@ class PNCPImporter:
         except Exception as e:
             print(f"Erro na requisição: {e}")
             return None
+
+    def obter_contratacao_especifica(self, cnpj, ano, sequencial):
+        """Busca os dados atuais de uma contratação específica"""
+        url = f"{self.BASE_URL_INTEGRACAO}/v1/orgaos/{cnpj}/compras/{ano}/{sequencial}"
+        return self._safe_request(url)
 
     def listar_contratacoes(self, data_inicial, data_final, pagina=1, modalidade=None):
         url = f"{self.BASE_URL_CONSULTA}/v1/contratacoes/publicacao"
@@ -94,14 +99,12 @@ class PNCPImporter:
     def formatar_para_html(self, contratacao, item):
         """Achata a estrutura para manter compatibilidade com o HTML antigo"""
         try:
-            # Formata datas
             dt_pub_raw = contratacao.get('dataPublicacaoPncp', '')
             dt_pub_fmt = ""
             if dt_pub_raw:
                 dt_obj = datetime.fromisoformat(dt_pub_raw.replace('Z', '+00:00'))
                 dt_pub_fmt = dt_obj.strftime("%a %b %d %Y %H:%M:%S GMT-0300 (Brasilia Standard Time)")
 
-            # Pega vencedor do primeiro resultado se existir
             vencedor_nome = "SEM RESULTADO"
             vencedor_cnpj = ""
             valor_unit_homologado = 0
@@ -122,6 +125,11 @@ class PNCPImporter:
                     dt_res_obj = datetime.fromisoformat(dt_res_raw.replace('Z', '+00:00'))
                     data_resultado_fmt = dt_res_obj.strftime("%a %b %d %Y %H:%M:%S GMT-0300 (Brasilia Standard Time)")
 
+            # Extrai CNPJ do órgão de forma segura
+            cnpj_entidade = ""
+            if 'orgaoEntidade' in contratacao:
+                cnpj_entidade = contratacao['orgaoEntidade'].get('cnpj', "")
+
             return {
                 "orgao": contratacao.get('orgaoEntidade', {}).get('razaoSocial', ""),
                 "ano": contratacao.get('anoCompra'),
@@ -140,10 +148,11 @@ class PNCPImporter:
                 "valorTotalHomologado": valor_total_homologado,
                 "qtdHomologada": qtd_homologada,
                 "situacaoItem": item.get('situacaoCompraItemNome', ""),
-                "linkPNCP": f"https://pncp.gov.br/app/editais/{contratacao.get('orgaoEntidade', {}).get('cnpj')}/{contratacao.get('anoCompra')}/{contratacao.get('sequencialCompra')}",
+                "linkPNCP": f"https://pncp.gov.br/app/editais/{cnpj_entidade}/{contratacao.get('anoCompra')}/{contratacao.get('sequencialCompra')}",
                 "processo": contratacao.get('processo', ""),
                 "dataPublicacao": dt_pub_fmt,
-                "dataResultado": data_resultado_fmt
+                "dataResultado": data_resultado_fmt,
+                "_sequencial": contratacao.get('sequencialCompra') # Campo interno para controle
             }
         except Exception as e:
             print(f"Erro na formatação: {e}")
@@ -164,7 +173,6 @@ class PNCPImporter:
                 if num:
                     item['resultados_vencedores'] = self.obter_resultados_item(cnpj_orgao, ano, sequencial, num)
                 
-                # Cria uma entrada para cada item no formato antigo
                 item_formatado = self.formatar_para_html(contratacao, item)
                 if item_formatado:
                     itens_achatados.append(item_formatado)
@@ -210,6 +218,7 @@ def main():
     full_json_data = {}
     data_inicio = "20240101"
 
+    # 1. Carregar dados existentes
     if os.path.exists(FILE_NAME):
         with open(FILE_NAME, 'r', encoding='utf-8') as f:
             try:
@@ -221,50 +230,84 @@ def main():
                     full_json_data = content
                     dados_carregados = content.get('data', [])
                     is_dict_format = True
-                
-                if dados_carregados:
-                    datas_str = [c.get('dataPublicacao', '') for c in dados_carregados if c.get('dataPublicacao')]
-                    
-                    datas_convertidas = []
-                    for d in datas_str:
-                        try:
-                            # Extrai "Dec 29 2025" da string longa
-                            partes = d.split(' ')
-                            data_limpa = f"{partes[1]} {partes[2]} {partes[3]}"
-                            dt = datetime.strptime(data_limpa, "%b %d %Y")
-                            datas_convertidas.append(dt)
-                        except: continue
-                    
-                    if datas_convertidas:
-                        ultima_dt = max(datas_convertidas)
-                        data_inicio = (ultima_dt + timedelta(days=1)).strftime("%Y%m%d")
             except Exception as e:
                 print(f"Erro ao ler JSON: {e}")
 
+    importer = PNCPImporter()
+
+    # 2. Lógica de REFRESH (Atualizar o que já existe e está em aberto)
+    print("\n--- Iniciando atualização de status (Refresh) ---")
+    # Filtramos itens que não estão finalizados (Homologado ou Fracassado)
+    # E focamos em itens de 2025/2026 para não sobrecarregar
+    itens_para_atualizar = [
+        i for i in dados_carregados 
+        if i.get('situacaoItem') not in ['Homologado', 'Fracassado', 'Anulado', 'Revogado']
+        and i.get('ano') in [2025, 2026]
+    ]
+    
+    if itens_para_atualizar:
+        # Agrupamos por sequencial para não fazer requisições repetidas da mesma compra
+        sequenciais = list(set([i.get('_sequencial') for i in itens_para_atualizar if i.get('_sequencial')]))
+        print(f"Verificando {len(sequenciais)} contratações em aberto...")
+        
+        for seq in sequenciais:
+            try:
+                # Busca dados atualizados da compra
+                compra_atualizada = importer.obter_contratacao_especifica(importer.cnpj, 2025 if seq > 500 else 2026, seq) # Simplificação do ano
+                if not compra_atualizada: 
+                    # Tenta o outro ano se falhar (devido à virada de ano)
+                    compra_atualizada = importer.obter_contratacao_especifica(importer.cnpj, 2026 if seq < 500 else 2025, seq)
+                
+                if compra_atualizada:
+                    novos_detalhes = importer.processar_contratacao_completa(compra_atualizada)
+                    if novos_detalhes:
+                        # Remove os itens antigos dessa compra e adiciona os novos
+                        dados_carregados = [i for i in dados_carregados if i.get('_sequencial') != seq]
+                        dados_carregados.extend(novos_detalhes)
+                        print(f"  [OK] {seq} atualizado.")
+            except Exception as e:
+                print(f"  [ERRO] Falha ao atualizar {seq}: {e}")
+    else:
+        print("Nenhum item pendente de atualização encontrado.")
+
+    # 3. Lógica de INCREMENTAL (Buscar novos dados)
+    if dados_carregados:
+        datas_str = [c.get('dataPublicacao', '') for c in dados_carregados if c.get('dataPublicacao')]
+        datas_convertidas = []
+        for d in datas_str:
+            try:
+                partes = d.split(' ')
+                data_limpa = f"{partes[1]} {partes[2]} {partes[3]}"
+                dt = datetime.strptime(data_limpa, "%b %d %Y")
+                datas_convertidas.append(dt)
+            except: continue
+        if datas_convertidas:
+            ultima_dt = max(datas_convertidas)
+            data_inicio = (ultima_dt + timedelta(days=1)).strftime("%Y%m%d")
+
     data_hoje = datetime.now().strftime("%Y%m%d")
     
-    if data_inicio > data_hoje:
-        print(f"Dados ja estao atualizados ate {data_inicio}. Nada a fazer.")
-        return
-
-    print(f"Iniciando sincronizacao de {data_inicio} ate {data_hoje}...")
-    importer = PNCPImporter()
-    novos_dados = importer.importar_tudo(data_inicio, data_hoje)
-
-    if novos_dados:
-        if is_dict_format:
-            full_json_data['data'] = dados_carregados + novos_dados
-            full_json_data['totalRegistros'] = len(full_json_data['data'])
-            full_json_data['geradoEm'] = datetime.now().isoformat()
-            dados_finais = full_json_data
-        else:
-            dados_finais = dados_carregados + novos_dados
-            
-        with open(FILE_NAME, 'w', encoding='utf-8') as f:
-            json.dump(dados_finais, f, indent=4, ensure_ascii=False)
-        print(f"\nSucesso! {len(novos_dados)} novos registros adicionados.")
+    if data_inicio <= data_hoje:
+        print(f"\n--- Buscando novos dados de {data_inicio} até {data_hoje} ---")
+        novos_dados = importer.importar_tudo(data_inicio, data_hoje)
+        if novos_dados:
+            dados_carregados.extend(novos_dados)
+            print(f"Sucesso! {len(novos_dados)} novos registros adicionados.")
     else:
-        print("\nNenhuma nova contratacao encontrada.")
+        print(f"\nDados já estão atualizados até {data_inicio}. Nenhuma nova busca necessária.")
+
+    # 4. Salvar tudo
+    if is_dict_format:
+        full_json_data['data'] = dados_carregados
+        full_json_data['totalRegistros'] = len(dados_carregados)
+        full_json_data['geradoEm'] = datetime.now().isoformat()
+        dados_finais = full_json_data
+    else:
+        dados_finais = dados_carregados
+        
+    with open(FILE_NAME, 'w', encoding='utf-8') as f:
+        json.dump(dados_finais, f, indent=4, ensure_ascii=False)
+    print("\nProcesso concluído com sucesso!")
 
 if __name__ == "__main__":
     main()
