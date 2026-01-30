@@ -1,351 +1,387 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leitor PNCP</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>PNCP Explorer | Dashboard de Contratações</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root {
-            --bg: #f8fafc; --card: #fff; --text: #0f172a; --muted: #64748b;
-            --border: #e2e8f0; --primary: #2563eb; --success: #16a34a;
-            --warning: #d97706; --danger: #dc2626;
-            --highlight-bg: #fef9c3; --highlight-text: #713f12;
-        }
-        [data-theme="dark"] {
-            --bg: #020617; --card: #0f172a; --text: #e2e8f0;
-            --muted: #94a3b8; --border: #1e293b; --primary: #3b82f6;
-            --highlight-bg: #422006; --highlight-text: #fef08a;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); transition: background .2s, color .2s; }
-        header { background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .container { max-width: 1300px; margin: auto; padding: 2rem; }
-        button, input, select { padding: .6rem .75rem; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-family: inherit; font-size: .9rem; transition: all .2s; }
-        button { cursor: pointer; }
-        button:hover:not(:disabled) { background: #f1f5f9; border-color: var(--primary); }
-        [data-theme="dark"] button:hover:not(:disabled) { background: #1e293b; }
-        button:disabled { opacity: .5; cursor: not-allowed; }
-        button.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
-        .stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all .2s; }
-        .stat:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .stat span { font-size: .8rem; color: var(--muted); }
-        .stat strong { font-size: 1.3rem; display: block; margin-top: .25rem; }
-        .filters { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
-        .filters .search-wrapper { display: flex; flex-grow: 1; }
-        .filters input { border-top-right-radius: 0; border-bottom-right-radius: 0; min-width: 150px; }
-        .filters #search-btn { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none; }
-        table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; font-size: .85rem; transition: opacity .2s; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        th { background: #f1f5f9; color: var(--muted); padding: .75rem; text-align: left; font-weight: 600; text-transform: uppercase; font-size: .75rem; }
-        [data-theme="dark"] th { background: #1e293b; }
-        td { padding: .75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
-        tbody tr:not(.details-row):hover { background: rgba(0, 0, 0, .03); }
-        [data-theme="dark"] tbody tr:not(.details-row):hover { background: rgba(255, 255, 255, .03); }
-        .badge { padding: .3rem .6rem; border-radius: 999px; font-size: .7rem; font-weight: 600; }
-        .success { background: #16a34a20; color: #22c55e; }
-        .warning { background: #d9770620; color: #f59e0b; }
-        .danger { background: #dc262620; color: #ef4444; }
-        .neutral { background: #e5e7eb; color: #374151; }
-        [data-theme="dark"] .neutral { background: #374151; color: #d1d5db; }
-        a { color: var(--primary); text-decoration: none; font-weight: 500; }
-        a:hover { text-decoration: underline; }
-        .pagination { display: flex; justify-content: center; align-items: center; gap: .5rem; margin-top: 2rem; flex-wrap: wrap; }
-        .pagination-info { text-align: center; margin-bottom: 1rem; font-size: .9rem; color: var(--muted); }
-        .loading { padding: 3rem; text-align: center; color: var(--muted); }
-        .spinner { width: 36px; height: 36px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: auto; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .details-row { display: none; }
-        .details-row.show { display: table-row; }
-        .details-row td { background: #f9fafb; padding: 1rem 1.5rem; }
-        [data-theme="dark"] .details-row td { background: #0b1120; }
-        .details-content { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
-        .details-content div { display: flex; flex-direction: column; }
-        .details-content span { color: var(--muted); font-size: .75rem; margin-bottom: .25rem; text-transform: uppercase; }
-        .details-content strong { font-weight: 500; word-break: break-word; }
-        .toggle-details { cursor: pointer; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #f1f5f9; color: var(--muted); font-weight: bold; transition: all .2s; }
-        [data-theme="dark"] .toggle-details { background: #1e293b; }
-        .toggle-details:hover { background: var(--primary); color: white; }
-        mark { background-color: var(--highlight-bg); color: var(--highlight-text); padding: 1px 2px; border-radius: 3px; }
+        body { font-family: 'Inter', sans-serif; }
+        .glass-effect { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
+        .dark .glass-effect { background: rgba(15, 23, 42, 0.8); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; }
+        mark { background-color: #fef08a; color: #854d0e; padding: 0 2px; border-radius: 2px; }
+        .dark mark { background-color: #854d0e; color: #fef08a; }
+        tr.details-row { display: none; }
+        tr.details-row.show { display: table-row; }
     </style>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#1e3a8a' }
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body>
-    <header>
-        <strong>Leitor PNCP</strong>
-        <button id="theme-toggle">🌙 / ☀️</button>
-    </header>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 h-full transition-colors duration-300">
+    
+    <div class="min-h-full flex flex-col">
+        <!-- Header -->
+        <header class="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 glass-effect">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="bg-primary-600 p-2 rounded-lg">
+                        <i class="fas fa-database text-white"></i>
+                    </div>
+                    <h1 class="text-xl font-bold tracking-tight">PNCP <span class="text-primary-600">Explorer</span></h1>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        <i class="fas fa-moon dark:hidden"></i>
+                        <i class="fas fa-sun hidden dark:block"></i>
+                    </button>
+                    <button id="refresh-btn" class="hidden sm:flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-md text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                        <i class="fas fa-sync-alt"></i> Atualizar
+                    </button>
+                </div>
+            </div>
+        </header>
 
-    <div class="container" id="app">
-        <div class="loading"><div class="spinner"></div></div>
+        <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            
+            <!-- Stats Grid -->
+            <div id="stats-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <!-- Stats Skeleton -->
+                <div class="animate-pulse bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 h-24"></div>
+                <div class="animate-pulse bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 h-24"></div>
+                <div class="animate-pulse bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 h-24"></div>
+                <div class="animate-pulse bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 h-24"></div>
+            </div>
+
+            <!-- Filters & Search -->
+            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 mb-6 shadow-sm">
+                <div class="flex flex-col lg:flex-row gap-4">
+                    <div class="relative flex-1">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="search-input" placeholder="Buscar por descrição, vencedor, processo..." 
+                            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all">
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        <select id="year-select" class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary-500">
+                            <option value="all">Todos os Anos</option>
+                        </select>
+                        <select id="status-select" class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary-500">
+                            <option value="all">Todos os Status</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
+                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500"></th>
+                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Publicação</th>
+                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Compra</th>
+                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Descrição</th>
+                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body" class="divide-y divide-slate-200 dark:divide-slate-800">
+                            <!-- Loading State -->
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center">
+                                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-200 border-t-primary-600"></div>
+                                    <p class="mt-2 text-slate-500">Carregando dados...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div id="pagination-container" class="px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <p id="pagination-info" class="text-sm text-slate-500"></p>
+                    <div id="pagination-buttons" class="flex items-center gap-1"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="py-6 border-t border-slate-200 dark:border-slate-800 text-center text-sm text-slate-500">
+            <p>PNCP Explorer &copy; 2026 - Dados atualizados via GitHub Actions</p>
+        </footer>
     </div>
 
     <script>
         const DATA_URL = './dados.json';
-        const PER_PAGE = 20;
-
-        const app = document.getElementById('app');
-        const themeToggle = document.getElementById('theme-toggle');
-
+        const PER_PAGE = 15;
+        
         let allData = [], stats = {}, search = '', statusFilter = 'all', yearFilter = 'all', page = 1;
 
-        // --- Funções Utilitárias ---
-        function normalizeText(text) {
-            if (!text) return '';
-            return text.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        }
-
-        function highlightText(text, term) {
+        // --- Utils ---
+        const normalize = (t) => t ? t.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : '';
+        
+        const highlight = (text, term) => {
             if (!term || !text) return text;
-            const normalizedTerm = normalizeText(term);
             const regex = new RegExp(`(${term})`, 'gi');
             return text.toString().replace(regex, `<mark>$1</mark>`);
-        }
+        };
 
-        // --- Funções de Inicialização ---
-        function initializeTheme() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.dataset.theme = savedTheme;
-        }
+        const getBadgeClass = (status) => {
+            const map = {
+                'Homologado': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+                'Fracassado': 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+                'Em andamento': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+                'Divulgada': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+            };
+            return map[status] || 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400';
+        };
 
-        async function fetchData() {
-            renderLoading();
+        // --- Theme ---
+        const initTheme = () => {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        };
+
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+        });
+
+        // --- Data ---
+        async function loadData() {
             try {
-                const response = await fetch(`${DATA_URL}?v=${new Date().getTime()}`);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const result = await response.json();
-                allData = result.data || [];
-                stats = result.stats || {};
-                page = 1;
+                const res = await fetch(`${DATA_URL}?v=${Date.now()}`);
+                const json = await res.json();
+                allData = json.data || [];
+                stats = json.stats || calculateStats(allData);
+                populateFilters();
                 render();
-            } catch (error) {
-                console.error("Erro ao carregar JSON:", error);
-                renderError("Erro ao carregar os dados. Verifique o console.");
+            } catch (e) {
+                console.error(e);
+                document.getElementById('table-body').innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-rose-500">Erro ao carregar dados.</td></tr>`;
             }
         }
 
-        // --- Funções de Renderização ---
-        function render() {
-            const filteredData = getFilteredData();
-            const paginatedData = filteredData.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-
-            app.innerHTML = `
-                ${renderStats()}
-                ${renderFilters()}
-                ${renderPaginationInfo(filteredData.length)}
-                ${renderTable(paginatedData)}
-                ${renderPagination(filteredData.length)}
-            `;
-            addEventListeners();
+        function calculateStats(data) {
+            return {
+                totalItens: data.length,
+                valorTotalEstimado: data.reduce((acc, i) => acc + (i.valorTotalEstimado || 0), 0),
+                itensHomologados: data.filter(i => i.situacaoItem === 'Homologado').length,
+                itensFracassados: data.filter(i => i.situacaoItem === 'Fracassado').length
+            };
         }
 
-        function renderLoading() { app.innerHTML = '<div class="loading"><div class="spinner"></div></div>'; }
-        function renderError(message) { app.innerHTML = `<div class="loading">${message}</div>`; }
+        function populateFilters() {
+            const years = [...new Set(allData.map(i => i.ano))].sort((a,b) => b-a);
+            const statuses = [...new Set(allData.map(i => i.situacaoItem))].filter(Boolean).sort();
+            
+            const ySelect = document.getElementById('year-select');
+            years.forEach(y => ySelect.innerHTML += `<option value="${y}">${y}</option>`);
+            
+            const sSelect = document.getElementById('status-select');
+            statuses.forEach(s => sSelect.innerHTML += `<option value="${s}">${s}</option>`);
+        }
+
+        // --- Rendering ---
+        function render() {
+            const filtered = getFiltered();
+            const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+            
+            renderStats();
+            renderTable(paginated);
+            renderPagination(filtered.length);
+        }
 
         function renderStats() {
-            return `
-            <div class="stats">
-                <div class="stat"><span>Total Itens</span><strong>${stats.totalItens?.toLocaleString('pt-BR') || 0}</strong></div>
-                <div class="stat"><span>Valor Estimado</span><strong>R$ ${stats.valorTotalEstimado?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}</strong></div>
-                <div class="stat"><span>Homologados</span><strong>${stats.itensHomologados?.toLocaleString('pt-BR') || 0}</strong></div>
-                <div class="stat"><span>Fracassados</span><strong>${stats.itensFracassados?.toLocaleString('pt-BR') || 0}</strong></div>
-            </div>`;
-        }
-
-        function renderFilters() {
-            const statusOptions = [...new Set(allData.map(i => i.situacaoItem).filter(Boolean))]
-                .map(s => `<option value="${s}" ${statusFilter === s ? 'selected' : ''}>${s}</option>`).join('');
+            const container = document.getElementById('stats-container');
+            const items = [
+                { label: 'Total de Itens', val: stats.totalItens?.toLocaleString('pt-BR'), icon: 'fa-list', color: 'text-blue-600' },
+                { label: 'Valor Estimado', val: 'R$ ' + (stats.valorTotalEstimado?.toLocaleString('pt-BR', {minimumFractionDigits:2})), icon: 'fa-hand-holding-dollar', color: 'text-emerald-600' },
+                { label: 'Homologados', val: stats.itensHomologados?.toLocaleString('pt-BR'), icon: 'fa-check-circle', color: 'text-emerald-500' },
+                { label: 'Fracassados', val: stats.itensFracassados?.toLocaleString('pt-BR'), icon: 'fa-times-circle', color: 'text-rose-500' }
+            ];
             
-            const yearOptions = [...new Set(allData.map(i => i.ano).filter(Boolean))].sort((a, b) => b - a)
-                .map(y => `<option value="${y}" ${yearFilter == y ? 'selected' : ''}>${y}</option>`).join('');
-
-            return `
-            <div class="filters">
-                <div class="search-wrapper">
-                    <input id="search-input" placeholder="Buscar..." value="${search}">
-                    <button id="search-btn">Buscar</button>
+            container.innerHTML = items.map(i => `
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-slate-500">${i.label}</span>
+                        <i class="fas ${i.icon} ${i.color}"></i>
+                    </div>
+                    <div class="text-2xl font-bold">${i.val || 0}</div>
                 </div>
-                <select id="year-select">
-                    <option value="all">Todos os Anos</option>
-                    ${yearOptions}
-                </select>
-                <select id="status-select">
-                    <option value="all">Todos os Status</option>
-                    ${statusOptions}
-                </select>
-                <button id="refresh-btn">Atualizar Dados</button>
-            </div>`;
-        }
-
-        function renderPaginationInfo(totalItems) {
-            const totalPages = Math.ceil(totalItems / PER_PAGE);
-            const startIdx = (page - 1) * PER_PAGE + 1;
-            const endIdx = Math.min(page * PER_PAGE, totalItems);
-            return `<div class="pagination-info">Mostrando ${startIdx} a ${endIdx} de ${totalItems} resultados (Página ${page} de ${totalPages})</div>`;
+            `).join('');
         }
 
         function renderTable(data) {
-            const tableRows = data.length ? data.map((item, index) => `
-                <tr data-row-id="${index}">
-                    <td><span class="toggle-details" onclick="toggleDetails(${index})">+</span></td>
-                    <td>${highlightText(item.dataPublicacao ? new Date(item.dataPublicacao).toLocaleDateString('pt-BR') : '-', search)}</td>
-                    <td>${highlightText(item.compra, search) || '-'}</td>
-                    <td>${highlightText(item.descricao, search) || '-'}</td>
-                    <td>${getBadge(item.situacaoItem)}</td>
-                    <td>${item.linkPNCP ? `<a href="${item.linkPNCP}" target="_blank" rel="noopener noreferrer">Abrir</a>` : '-'}</td>
+            const tbody = document.getElementById('table-body');
+            if (!data.length) {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-slate-500">Nenhum resultado encontrado.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = data.map((item, idx) => `
+                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group" onclick="toggleRow(${idx})">
+                    <td class="px-6 py-4">
+                        <i id="icon-${idx}" class="fas fa-chevron-right text-slate-300 group-hover:text-primary-500 transition-transform"></i>
+                    </td>
+                    <td class="px-6 py-4 text-sm whitespace-nowrap">
+                        ${item.dataPublicacao ? new Date(item.dataPublicacao).toLocaleDateString('pt-BR') : '-'}
+                    </td>
+                    <td class="px-6 py-4 text-sm font-medium text-primary-600 dark:text-primary-400">
+                        ${highlight(item.compra, search)}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 max-w-md truncate">
+                        ${highlight(item.descricao, search)}
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium ${getBadgeClass(item.situacaoItem)}">
+                            ${item.situacaoItem || 'N/A'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm">
+                        <a href="${item.linkPNCP}" target="_blank" onclick="event.stopPropagation()" class="text-slate-400 hover:text-primary-600 transition-colors">
+                            <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    </td>
                 </tr>
-                <tr class="details-row" id="details-${index}">
-                    <td colspan="6">
-                        <div class="details-content">
-                            <div><span>Objeto</span><strong>${highlightText(item.objeto, search) || 'Não informado'}</strong></div>
-                            <div><span>Vencedor</span><strong>${highlightText(item.vencedor, search) || 'Não informado'}</strong></div>
-                            <div><span>Item Nº</span><strong>${highlightText(item.itemNo, search) || '-'}</strong></div>
-                            <div><span>Ano</span><strong>${highlightText(item.ano, search) || '-'}</strong></div>
+                <tr id="details-${idx}" class="details-row bg-slate-50/50 dark:bg-slate-800/20">
+                    <td colspan="6" class="px-6 py-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-4">
+                                <div>
+                                    <h4 class="text-xs font-semibold text-slate-400 uppercase mb-1">Objeto Completo</h4>
+                                    <p class="text-sm leading-relaxed">${highlight(item.objeto, search)}</p>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-semibold text-slate-400 uppercase mb-1">Processo</h4>
+                                    <p class="text-sm font-medium">${item.processo || '-'}</p>
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800">
+                                    <h4 class="text-xs font-semibold text-slate-400 uppercase mb-2">Resultado da Contratação</h4>
+                                    <div class="flex flex-col gap-2">
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-slate-500">Vencedor:</span>
+                                            <span class="font-semibold text-right">${highlight(item.vencedor, search)}</span>
+                                        </div>
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-slate-500">Valor Homologado:</span>
+                                            <span class="font-bold text-emerald-600">R$ ${item.valorTotalHomologado?.toLocaleString('pt-BR', {minimumFractionDigits:2}) || '0,00'}</span>
+                                        </div>
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-slate-500">Quantidade:</span>
+                                            <span>${item.qtdHomologada || 0} ${item.unidade || ''}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-xs text-slate-400 flex items-center gap-2">
+                                    <i class="fas fa-info-circle"></i>
+                                    Publicado em: ${item.dataPublicacao}
+                                </div>
+                            </div>
                         </div>
                     </td>
                 </tr>
-            `).join('') : `<tr><td colspan="6" class="loading">Nenhum item encontrado</td></tr>`;
-
-            return `
-            <table>
-                <thead><tr>
-                    <th></th>
-                    <th>Publicação</th>
-                    <th>Compra</th>
-                    <th>Descrição</th>
-                    <th>Status</th>
-                    <th>Link</th>
-                </tr></thead>
-                <tbody>${tableRows}</tbody>
-            </table>`;
+            `).join('');
         }
 
-        function renderPagination(totalItems) {
-            const totalPages = Math.ceil(totalItems / PER_PAGE);
-            if (totalPages <= 1) return '';
+        function renderPagination(total) {
+            const totalPages = Math.ceil(total / PER_PAGE);
+            const info = document.getElementById('pagination-info');
+            const btns = document.getElementById('pagination-buttons');
+            
+            info.textContent = `Mostrando ${(page-1)*PER_PAGE+1} a ${Math.min(page*PER_PAGE, total)} de ${total} registros`;
+            
+            let html = '';
+            const addBtn = (p, label, active=false, disabled=false) => {
+                html += `<button onclick="goToPage(${p})" ${disabled ? 'disabled' : ''} 
+                    class="px-3 py-1.5 rounded-md text-sm font-medium transition-all ${active ? 'bg-primary-600 text-white' : 'hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 disabled:opacity-30'}">
+                    ${label}
+                </button>`;
+            };
 
-            let paginationButtons = '';
-            const maxButtons = 7;
-            let start = Math.max(1, page - Math.floor(maxButtons / 2));
-            let end = Math.min(totalPages, start + maxButtons - 1);
-
-            if (end - start + 1 < maxButtons) {
-                start = Math.max(1, end - maxButtons + 1);
+            addBtn(1, '<i class="fas fa-angle-double-left"></i>', false, page === 1);
+            addBtn(page - 1, '<i class="fas fa-angle-left"></i>', false, page === 1);
+            
+            // Mostrar páginas próximas
+            for (let i = Math.max(1, page - 2); i <= Math.min(totalPages, page + 2); i++) {
+                addBtn(i, i, i === page);
             }
 
-            // Botão Primeira Página
-            paginationButtons += `<button id="first-page" ${page === 1 ? 'disabled' : ''}>« Primeira</button>`;
-
-            // Botão Anterior
-            paginationButtons += `<button id="prev-page" ${page === 1 ? 'disabled' : ''}>‹ Anterior</button>`;
-
-            // Números de página
-            if (start > 1) {
-                paginationButtons += `<button onclick="goToPage(1)">1</button>`;
-                if (start > 2) paginationButtons += `<span style="padding: 0 .5rem; color: var(--muted);">...</span>`;
-            }
-
-            for (let i = start; i <= end; i++) {
-                const isActive = i === page;
-                paginationButtons += `<button onclick="goToPage(${i})" class="${isActive ? 'active' : ''}">${i}</button>`;
-            }
-
-            if (end < totalPages) {
-                if (end < totalPages - 1) paginationButtons += `<span style="padding: 0 .5rem; color: var(--muted);">...</span>`;
-                paginationButtons += `<button onclick="goToPage(${totalPages})">${totalPages}</button>`;
-            }
-
-            // Botão Próxima
-            paginationButtons += `<button id="next-page" ${page >= totalPages ? 'disabled' : ''}>Próxima ›</button>`;
-
-            // Botão Última Página
-            paginationButtons += `<button id="last-page" ${page >= totalPages ? 'disabled' : ''}>Última »</button>`;
-
-            return `<div class="pagination">${paginationButtons}</div>`;
+            addBtn(page + 1, '<i class="fas fa-angle-right"></i>', false, page === totalPages);
+            addBtn(totalPages, '<i class="fas fa-angle-double-right"></i>', false, page === totalPages);
+            
+            btns.innerHTML = html;
         }
 
-        // --- Funções de Lógica e Eventos ---
-        function addEventListeners() {
-            document.getElementById('search-btn').addEventListener('click', handleSearch);
-            document.getElementById('search-input').addEventListener('keyup', (e) => { if (e.key === 'Enter') handleSearch(); });
-            document.getElementById('status-select').addEventListener('change', handleStatusFilter);
-            document.getElementById('year-select').addEventListener('change', handleYearFilter);
-            document.getElementById('refresh-btn').addEventListener('click', fetchData);
-            document.getElementById('prev-page')?.addEventListener('click', () => { if (page > 1) { page--; render(); } });
-            document.getElementById('next-page')?.addEventListener('click', () => { page++; render(); });
-            document.getElementById('first-page')?.addEventListener('click', () => { page = 1; render(); });
-            document.getElementById('last-page')?.addEventListener('click', () => { 
-                const filteredData = getFilteredData();
-                page = Math.ceil(filteredData.length / PER_PAGE); 
-                render(); 
+        // --- Logic ---
+        function getFiltered() {
+            const term = normalize(search);
+            return allData.filter(i => {
+                const mSearch = !term || [i.descricao, i.vencedor, i.compra, i.objeto, i.processo].some(v => normalize(v).includes(term));
+                const mStatus = statusFilter === 'all' || i.situacaoItem === statusFilter;
+                const mYear = yearFilter === 'all' || i.ano == yearFilter;
+                return mSearch && mStatus && mYear;
             });
         }
 
-        function handleSearch() {
-            search = document.getElementById('search-input').value;
-            page = 1;
-            render();
-        }
-
-        function handleStatusFilter(event) {
-            statusFilter = event.target.value;
-            page = 1;
-            render();
-        }
-
-        function handleYearFilter(event) {
-            yearFilter = event.target.value;
-            page = 1;
-            render();
-        }
-
-        function getFilteredData() {
-            const normalizedSearchTerm = normalizeText(search);
-            if (!normalizedSearchTerm && statusFilter === 'all' && yearFilter === 'all') {
-                return allData;
-            }
-
-            return allData.filter(item => {
-                const matchesSearch = !normalizedSearchTerm || [
-                    item.descricao, item.vencedor, item.compra, item.ano, item.objeto, item.itemNo
-                ].some(val => normalizeText(val).includes(normalizedSearchTerm));
-                
-                const matchesStatus = statusFilter === 'all' || item.situacaoItem === statusFilter;
-                const matchesYear = yearFilter === 'all' || item.ano == yearFilter;
-
-                return matchesSearch && matchesStatus && matchesYear;
-            });
-        }
-
-        function getBadge(status) {
-            const badges = { 'Homologado': 'success', 'Fracassado': 'danger', 'Em andamento': 'warning' };
-            const type = badges[status] || 'neutral';
-            return `<span class="badge ${type}">${status || '-'}</span>`;
-        }
-
-        function toggleTheme() {
-            const newTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-            document.documentElement.dataset.theme = newTheme;
-            localStorage.setItem('theme', newTheme);
-        }
-
-        function toggleDetails(index) {
-            const detailsRow = document.getElementById(`details-${index}`);
-            const toggleButton = document.querySelector(`[data-row-id="${index}"] .toggle-details`);
-            if (detailsRow) {
-                detailsRow.classList.toggle('show');
-                toggleButton.textContent = detailsRow.classList.contains('show') ? '−' : '+';
-            }
-        }
-
-        function goToPage(pageNum) {
-            page = pageNum;
+        function goToPage(p) {
+            page = p;
             render();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        themeToggle.addEventListener('click', toggleTheme);
-        initializeTheme();
-        fetchData();
+        function toggleRow(idx) {
+            const row = document.getElementById(`details-${idx}`);
+            const icon = document.getElementById(`icon-${idx}`);
+            const isShow = row.classList.toggle('show');
+            icon.style.transform = isShow ? 'rotate(90deg)' : 'rotate(0deg)';
+        }
+
+        // --- Events ---
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            search = e.target.value;
+            page = 1;
+            render();
+        });
+
+        document.getElementById('year-select').addEventListener('change', (e) => {
+            yearFilter = e.target.value;
+            page = 1;
+            render();
+        });
+
+        document.getElementById('status-select').addEventListener('change', (e) => {
+            statusFilter = e.target.value;
+            page = 1;
+            render();
+        });
+
+        document.getElementById('refresh-btn').addEventListener('click', loadData);
+
+        // --- Init ---
+        initTheme();
+        loadData();
     </script>
 </body>
 </html>
