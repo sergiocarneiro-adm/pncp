@@ -60,14 +60,13 @@
 
         <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
             
-            <!-- Recent Items Grid (Substituindo Stats) -->
+            <!-- Recent Items Grid -->
             <div class="mb-4 flex items-center justify-between">
                 <h2 class="text-sm font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
                     <i class="fas fa-clock-rotate-left"></i> Últimas Contratações Buscadas
                 </h2>
             </div>
             <div id="recent-items-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <!-- Skeletons -->
                 <div class="animate-pulse bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 h-32"></div>
                 <div class="animate-pulse bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 h-32"></div>
                 <div class="animate-pulse bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 h-32"></div>
@@ -119,6 +118,7 @@
                             <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
                                 <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Publicação</th>
                                 <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Ano</th>
+                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Item</th>
                                 <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Compra</th>
                                 <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Descrição</th>
                                 <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
@@ -127,7 +127,7 @@
                         </thead>
                         <tbody id="table-body" class="divide-y divide-slate-200 dark:divide-slate-800">
                             <tr>
-                                <td colspan="6" class="px-6 py-12 text-center">
+                                <td colspan="7" class="px-6 py-12 text-center">
                                     <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-200 border-t-primary-600"></div>
                                     <p class="mt-2 text-slate-500">Carregando dados...</p>
                                 </td>
@@ -158,6 +158,7 @@
                 <div class="flex items-center gap-3">
                     <span id="modal-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider"></span>
                     <h3 id="modal-title" class="font-bold text-lg text-primary-600 dark:text-primary-400"></h3>
+                    <span id="modal-item-no" class="bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded text-[10px] font-bold text-slate-600 dark:text-slate-400"></span>
                 </div>
                 <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
                     <i class="fas fa-times text-xl"></i>
@@ -286,7 +287,7 @@
                 render();
             } catch (e) {
                 console.error(e);
-                document.getElementById('table-body').innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-rose-500">Erro ao carregar dados.</td></tr>`;
+                document.getElementById('table-body').innerHTML = `<tr><td colspan="7" class="px-6 py-12 text-center text-rose-500">Erro ao carregar dados.</td></tr>`;
             }
         }
 
@@ -308,13 +309,15 @@
         // --- Rendering ---
         function renderRecentCards() {
             const container = document.getElementById('recent-items-container');
-            // Pegamos os 4 últimos itens do array (que costumam ser os mais recentes na extração incremental)
             const recent = [...allData].slice(-4).reverse();
             
             container.innerHTML = recent.map(item => `
                 <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-primary-500 transition-colors cursor-pointer group" onclick="openModalByItemData(${JSON.stringify(item).replace(/"/g, '&quot;')})">
                     <div class="flex justify-between items-start mb-2">
-                        <span class="text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase">${item.compra}</span>
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase">${item.compra}</span>
+                            <span class="text-[9px] font-bold text-slate-400">ITEM ${item.itemNo || '-'}</span>
+                        </div>
                         <span class="text-[10px] text-slate-400">${item.ano}</span>
                     </div>
                     <p class="text-xs font-medium line-clamp-2 mb-3 group-hover:text-primary-600 transition-colors">${item.descricao}</p>
@@ -335,7 +338,7 @@
         function renderTable(data) {
             const tbody = document.getElementById('table-body');
             if (!data.length) {
-                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-slate-500">Nenhum resultado encontrado.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-12 text-center text-slate-500">Nenhum resultado encontrado.</td></tr>`;
                 return;
             }
 
@@ -348,6 +351,9 @@
                     </td>
                     <td class="px-6 py-4 text-sm font-medium text-slate-400">
                         ${item.ano || '-'}
+                    </td>
+                    <td class="px-6 py-4 text-sm font-bold text-slate-500">
+                        ${item.itemNo || '-'}
                     </td>
                     <td class="px-6 py-4 text-sm font-bold text-primary-600 dark:text-primary-400">
                         ${highlight(item.compra, search)}
@@ -412,6 +418,7 @@
             
             // Fill Data
             document.getElementById('modal-title').textContent = item.compra;
+            document.getElementById('modal-item-no').textContent = `ITEM ${item.itemNo || '-'}`;
             document.getElementById('modal-badge').textContent = item.situacaoItem || 'N/A';
             document.getElementById('modal-badge').className = `px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${getBadgeClass(item.situacaoItem)}`;
             
@@ -440,12 +447,10 @@
         }
 
         function openModalByItemData(item) {
-            // Encontra o índice desse item na lista filtrada atual para permitir navegação
             const index = filteredData.findIndex(i => i.compra === item.compra && i.itemNo === item.itemNo);
             if (index !== -1) {
                 openModal(index);
             } else {
-                // Se não estiver na lista filtrada (ex: clicou no card mas tem filtro ativo), abre apenas o item sem navegação
                 filteredData.push(item);
                 openModal(filteredData.length - 1);
             }
@@ -523,7 +528,6 @@
         document.getElementById('modal-next').addEventListener('click', nextItem);
         document.getElementById('modal-prev').addEventListener('click', prevItem);
 
-        // Teclado
         window.addEventListener('keydown', (e) => {
             const modal = document.getElementById('details-modal');
             if (modal.classList.contains('modal-hidden')) return;
