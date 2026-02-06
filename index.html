@@ -17,8 +17,12 @@
         .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; }
         mark { background-color: #fef08a; color: #854d0e; padding: 0 2px; border-radius: 2px; }
         .dark mark { background-color: #854d0e; color: #fef08a; }
-        tr.details-row { display: none; }
-        tr.details-row.show { display: table-row; }
+        
+        /* Modal Animation */
+        .modal-backdrop { transition: opacity 0.3s ease; }
+        .modal-content { transition: transform 0.3s ease, opacity 0.3s ease; }
+        .modal-hidden { opacity: 0; pointer-events: none; }
+        .modal-hidden .modal-content { transform: scale(0.95); opacity: 0; }
     </style>
     <script>
         tailwind.config = {
@@ -33,7 +37,7 @@
         }
     </script>
 </head>
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 h-full transition-colors duration-300">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 h-full transition-colors duration-300 overflow-x-hidden">
     
     <div class="min-h-full flex flex-col">
         <!-- Header -->
@@ -56,18 +60,23 @@
 
         <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
             
-            <!-- Stats Grid -->
-            <div id="stats-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <div class="animate-pulse bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 h-24"></div>
-                <div class="animate-pulse bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 h-24"></div>
-                <div class="animate-pulse bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 h-24"></div>
-                <div class="animate-pulse bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 h-24"></div>
+            <!-- Recent Items Grid (Substituindo Stats) -->
+            <div class="mb-4 flex items-center justify-between">
+                <h2 class="text-sm font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                    <i class="fas fa-clock-rotate-left"></i> Últimas Contratações Buscadas
+                </h2>
+            </div>
+            <div id="recent-items-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <!-- Skeletons -->
+                <div class="animate-pulse bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 h-32"></div>
+                <div class="animate-pulse bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 h-32"></div>
+                <div class="animate-pulse bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 h-32"></div>
+                <div class="animate-pulse bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 h-32"></div>
             </div>
 
             <!-- Filters & Search -->
             <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 mb-6 shadow-sm">
                 <div class="flex flex-col gap-4">
-                    <!-- Search Row -->
                     <div class="flex flex-col sm:flex-row gap-2">
                         <div class="relative flex-1">
                             <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -79,7 +88,6 @@
                         </button>
                     </div>
                     
-                    <!-- Filters Row -->
                     <div class="flex flex-wrap gap-3">
                         <div class="flex flex-col gap-1 flex-1 min-w-[150px]">
                             <label class="text-[10px] uppercase font-bold text-slate-400 ml-1">Ano</label>
@@ -109,7 +117,6 @@
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
-                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 w-10"></th>
                                 <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Publicação</th>
                                 <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Ano</th>
                                 <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Compra</th>
@@ -120,7 +127,7 @@
                         </thead>
                         <tbody id="table-body" class="divide-y divide-slate-200 dark:divide-slate-800">
                             <tr>
-                                <td colspan="7" class="px-6 py-12 text-center">
+                                <td colspan="6" class="px-6 py-12 text-center">
                                     <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-200 border-t-primary-600"></div>
                                     <p class="mt-2 text-slate-500">Carregando dados...</p>
                                 </td>
@@ -129,7 +136,6 @@
                     </table>
                 </div>
                 
-                <!-- Pagination -->
                 <div id="pagination-container" class="px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p id="pagination-info" class="text-sm text-slate-500"></p>
                     <div id="pagination-buttons" class="flex items-center gap-1"></div>
@@ -137,17 +143,103 @@
             </div>
         </main>
 
-        <!-- Footer -->
         <footer class="py-6 border-t border-slate-200 dark:border-slate-800 text-center text-sm text-slate-500">
             <p>PNCP Explorer &copy; 2026 - Dados atualizados via GitHub Actions</p>
         </footer>
+    </div>
+
+    <!-- Modal de Detalhes -->
+    <div id="details-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-hidden">
+        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm modal-backdrop" onclick="closeModal()"></div>
+        
+        <div class="relative bg-white dark:bg-slate-900 w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col modal-content">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950/50">
+                <div class="flex items-center gap-3">
+                    <span id="modal-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider"></span>
+                    <h3 id="modal-title" class="font-bold text-lg text-primary-600 dark:text-primary-400"></h3>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Coluna Principal -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <section>
+                            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Descrição do Item</h4>
+                            <p id="modal-desc" class="text-slate-700 dark:text-slate-300 leading-relaxed text-sm"></p>
+                        </section>
+                        <section>
+                            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Objeto da Compra</h4>
+                            <p id="modal-objeto" class="text-slate-600 dark:text-slate-400 leading-relaxed text-sm italic"></p>
+                        </section>
+                    </div>
+
+                    <!-- Coluna Lateral -->
+                    <div class="space-y-4">
+                        <div class="bg-slate-50 dark:bg-slate-950/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Resultado</h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <span class="text-[10px] text-slate-500 block">Vencedor</span>
+                                    <span id="modal-vencedor" class="text-sm font-bold break-words"></span>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] text-slate-500 block">Valor Homologado</span>
+                                    <span id="modal-valor" class="text-lg font-black text-emerald-600"></span>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] text-slate-500 block">Quantidade</span>
+                                    <span id="modal-qtd" class="text-sm font-medium"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="px-2 space-y-2">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-500">Processo:</span>
+                                <span id="modal-processo" class="font-semibold"></span>
+                            </div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-500">Modalidade:</span>
+                                <span id="modal-modalidade" class="font-semibold"></span>
+                            </div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-500">Publicação:</span>
+                                <span id="modal-data" class="font-semibold"></span>
+                            </div>
+                        </div>
+                        
+                        <a id="modal-link" target="_blank" class="flex items-center justify-center gap-2 w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity mt-4">
+                            <i class="fas fa-external-link-alt"></i> Ver no PNCP
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer (Navegação) -->
+            <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950/50">
+                <button id="modal-prev" class="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-primary-600 transition-colors disabled:opacity-20">
+                    <i class="fas fa-arrow-left"></i> Anterior
+                </button>
+                <span id="modal-counter" class="text-xs font-medium text-slate-400"></span>
+                <button id="modal-next" class="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-primary-600 transition-colors disabled:opacity-20">
+                    Próximo <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
     </div>
 
     <script>
         const DATA_URL = './dados.json';
         const PER_PAGE = 15;
         
-        let allData = [], stats = {}, search = '', statusFilter = 'all', yearFilter = 'all', modalidadeFilter = 'all', page = 1;
+        let allData = [], filteredData = [], search = '', statusFilter = 'all', yearFilter = 'all', modalidadeFilter = 'all', page = 1;
+        let currentModalIndex = -1;
 
         // --- Utils ---
         const normalize = (t) => t ? t.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : '';
@@ -188,22 +280,14 @@
                 const res = await fetch(`${DATA_URL}?v=${Date.now()}`);
                 const json = await res.json();
                 allData = json.data || [];
-                stats = json.stats || calculateStats(allData);
                 populateFilters();
+                updateFiltered();
+                renderRecentCards();
                 render();
             } catch (e) {
                 console.error(e);
-                document.getElementById('table-body').innerHTML = `<tr><td colspan="7" class="px-6 py-12 text-center text-rose-500">Erro ao carregar dados.</td></tr>`;
+                document.getElementById('table-body').innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-rose-500">Erro ao carregar dados.</td></tr>`;
             }
-        }
-
-        function calculateStats(data) {
-            return {
-                totalItens: data.length,
-                valorTotalEstimado: data.reduce((acc, i) => acc + (i.valorTotalEstimado || 0), 0),
-                itensHomologados: data.filter(i => i.situacaoItem === 'Homologado').length,
-                itensFracassados: data.filter(i => i.situacaoItem === 'Fracassado').length
-            };
         }
 
         function populateFilters() {
@@ -222,116 +306,72 @@
         }
 
         // --- Rendering ---
-        function render() {
-            const filtered = getFiltered();
-            const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+        function renderRecentCards() {
+            const container = document.getElementById('recent-items-container');
+            // Pegamos os 4 últimos itens do array (que costumam ser os mais recentes na extração incremental)
+            const recent = [...allData].slice(-4).reverse();
             
-            renderStats();
-            renderTable(paginated);
-            renderPagination(filtered.length);
-        }
-
-        function renderStats() {
-            const container = document.getElementById('stats-container');
-            const items = [
-                { label: 'Total de Itens', val: stats.totalItens?.toLocaleString('pt-BR'), icon: 'fa-list', color: 'text-blue-600' },
-                { label: 'Valor Estimado', val: 'R$ ' + (stats.valorTotalEstimado?.toLocaleString('pt-BR', {minimumFractionDigits:2})), icon: 'fa-hand-holding-dollar', color: 'text-emerald-600' },
-                { label: 'Homologados', val: stats.itensHomologados?.toLocaleString('pt-BR'), icon: 'fa-check-circle', color: 'text-emerald-500' },
-                { label: 'Fracassados', val: stats.itensFracassados?.toLocaleString('pt-BR'), icon: 'fa-times-circle', color: 'text-rose-500' }
-            ];
-            
-            container.innerHTML = items.map(i => `
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm font-medium text-slate-500">${i.label}</span>
-                        <i class="fas ${i.icon} ${i.color}"></i>
+            container.innerHTML = recent.map(item => `
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-primary-500 transition-colors cursor-pointer group" onclick="openModalByItemData(${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase">${item.compra}</span>
+                        <span class="text-[10px] text-slate-400">${item.ano}</span>
                     </div>
-                    <div class="text-2xl font-bold">${i.val || 0}</div>
+                    <p class="text-xs font-medium line-clamp-2 mb-3 group-hover:text-primary-600 transition-colors">${item.descricao}</p>
+                    <div class="flex items-center justify-between mt-auto">
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${getBadgeClass(item.situacaoItem)}">${item.situacaoItem || 'N/A'}</span>
+                        <span class="text-[10px] font-black text-emerald-600">R$ ${item.valorTotalHomologado?.toLocaleString('pt-BR', {minimumFractionDigits:2}) || '0,00'}</span>
+                    </div>
                 </div>
             `).join('');
+        }
+
+        function render() {
+            const paginated = filteredData.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+            renderTable(paginated);
+            renderPagination(filteredData.length);
         }
 
         function renderTable(data) {
             const tbody = document.getElementById('table-body');
             if (!data.length) {
-                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-12 text-center text-slate-500">Nenhum resultado encontrado.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-slate-500">Nenhum resultado encontrado.</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = data.map((item, idx) => `
-                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group" onclick="toggleRow(${idx})">
-                    <td class="px-6 py-4">
-                        <i id="icon-${idx}" class="fas fa-chevron-right text-slate-300 group-hover:text-primary-500 transition-transform"></i>
-                    </td>
-                    <td class="px-6 py-4 text-sm whitespace-nowrap">
+            tbody.innerHTML = data.map((item, idx) => {
+                const globalIndex = (page - 1) * PER_PAGE + idx;
+                return `
+                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group" onclick="openModal(${globalIndex})">
+                    <td class="px-6 py-4 text-sm whitespace-nowrap text-slate-500">
                         ${item.dataPublicacao ? new Date(item.dataPublicacao).toLocaleDateString('pt-BR') : '-'}
                     </td>
-                    <td class="px-6 py-4 text-sm font-medium text-slate-500">
+                    <td class="px-6 py-4 text-sm font-medium text-slate-400">
                         ${item.ano || '-'}
                     </td>
-                    <td class="px-6 py-4 text-sm font-medium text-primary-600 dark:text-primary-400">
+                    <td class="px-6 py-4 text-sm font-bold text-primary-600 dark:text-primary-400">
                         ${highlight(item.compra, search)}
                     </td>
-                    <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
+                    <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
                         ${highlight(item.descricao, search)}
                     </td>
                     <td class="px-6 py-4">
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium ${getBadgeClass(item.situacaoItem)}">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${getBadgeClass(item.situacaoItem)}">
                             ${item.situacaoItem || 'N/A'}
                         </span>
                     </td>
                     <td class="px-6 py-4 text-sm">
-                        <a href="${item.linkPNCP}" target="_blank" onclick="event.stopPropagation()" class="text-slate-400 hover:text-primary-600 transition-colors">
-                            <i class="fas fa-external-link-alt"></i>
-                        </a>
-                    </td>
-                </tr>
-                <tr id="details-${idx}" class="details-row bg-slate-50/50 dark:bg-slate-800/20">
-                    <td colspan="7" class="px-6 py-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="space-y-4">
-                                <div>
-                                    <h4 class="text-xs font-semibold text-slate-400 uppercase mb-1">Objeto Completo</h4>
-                                    <p class="text-sm leading-relaxed">${highlight(item.objeto, search)}</p>
-                                </div>
-                                <div class="flex gap-8">
-                                    <div>
-                                        <h4 class="text-xs font-semibold text-slate-400 uppercase mb-1">Processo</h4>
-                                        <p class="text-sm font-medium">${item.processo || '-'}</p>
-                                    </div>
-                                    <div>
-                                        <h4 class="text-xs font-semibold text-slate-400 uppercase mb-1">Modalidade</h4>
-                                        <p class="text-sm font-medium">${item.modalidade || '-'}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="space-y-4">
-                                <div class="bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800">
-                                    <h4 class="text-xs font-semibold text-slate-400 uppercase mb-2">Resultado da Contratação</h4>
-                                    <div class="flex flex-col gap-2">
-                                        <div class="flex justify-between text-sm">
-                                            <span class="text-slate-500">Vencedor:</span>
-                                            <span class="font-semibold text-right">${highlight(item.vencedor, search)}</span>
-                                        </div>
-                                        <div class="flex justify-between text-sm">
-                                            <span class="text-slate-500">Valor Homologado:</span>
-                                            <span class="font-bold text-emerald-600">R$ ${item.valorTotalHomologado?.toLocaleString('pt-BR', {minimumFractionDigits:2}) || '0,00'}</span>
-                                        </div>
-                                        <div class="flex justify-between text-sm">
-                                            <span class="text-slate-500">Quantidade:</span>
-                                            <span>${item.qtdHomologada || 0} ${item.unidade || ''}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="text-xs text-slate-400 flex items-center gap-2">
-                                    <i class="fas fa-info-circle"></i>
-                                    Publicado em: ${item.dataPublicacao}
-                                </div>
-                            </div>
+                        <div class="flex items-center gap-3">
+                            <button class="text-slate-300 group-hover:text-primary-500 transition-colors">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <a href="${item.linkPNCP}" target="_blank" onclick="event.stopPropagation()" class="text-slate-300 hover:text-primary-600 transition-colors">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
                         </div>
                     </td>
                 </tr>
-            `).join('');
+            `}).join('');
         }
 
         function renderPagination(total) {
@@ -362,10 +402,76 @@
             btns.innerHTML = html;
         }
 
+        // --- Modal Logic ---
+        function openModal(index) {
+            currentModalIndex = index;
+            const item = filteredData[index];
+            if (!item) return;
+
+            const modal = document.getElementById('details-modal');
+            
+            // Fill Data
+            document.getElementById('modal-title').textContent = item.compra;
+            document.getElementById('modal-badge').textContent = item.situacaoItem || 'N/A';
+            document.getElementById('modal-badge').className = `px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${getBadgeClass(item.situacaoItem)}`;
+            
+            document.getElementById('modal-desc').innerHTML = highlight(item.descricao, search);
+            document.getElementById('modal-objeto').innerHTML = highlight(item.objeto, search);
+            
+            document.getElementById('modal-vencedor').innerHTML = highlight(item.vencedor, search) || 'Não informado';
+            document.getElementById('modal-valor').textContent = 'R$ ' + (item.valorTotalHomologado?.toLocaleString('pt-BR', {minimumFractionDigits:2}) || '0,00');
+            document.getElementById('modal-qtd').textContent = `${item.qtdHomologada || 0} ${item.unidade || ''}`;
+            
+            document.getElementById('modal-processo').textContent = item.processo || '-';
+            document.getElementById('modal-modalidade').textContent = item.modalidade || '-';
+            document.getElementById('modal-data').textContent = item.dataPublicacao || '-';
+            document.getElementById('modal-link').href = item.linkPNCP;
+
+            // Counter
+            document.getElementById('modal-counter').textContent = `${index + 1} de ${filteredData.length}`;
+
+            // Nav Buttons
+            document.getElementById('modal-prev').disabled = index === 0;
+            document.getElementById('modal-next').disabled = index === filteredData.length - 1;
+
+            // Show
+            modal.classList.remove('modal-hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function openModalByItemData(item) {
+            // Encontra o índice desse item na lista filtrada atual para permitir navegação
+            const index = filteredData.findIndex(i => i.compra === item.compra && i.itemNo === item.itemNo);
+            if (index !== -1) {
+                openModal(index);
+            } else {
+                // Se não estiver na lista filtrada (ex: clicou no card mas tem filtro ativo), abre apenas o item sem navegação
+                filteredData.push(item);
+                openModal(filteredData.length - 1);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('details-modal').classList.add('modal-hidden');
+            document.body.style.overflow = '';
+        }
+
+        function nextItem() {
+            if (currentModalIndex < filteredData.length - 1) {
+                openModal(currentModalIndex + 1);
+            }
+        }
+
+        function prevItem() {
+            if (currentModalIndex > 0) {
+                openModal(currentModalIndex - 1);
+            }
+        }
+
         // --- Logic ---
-        function getFiltered() {
+        function updateFiltered() {
             const term = normalize(search);
-            return allData.filter(i => {
+            filteredData = allData.filter(i => {
                 const mSearch = !term || [i.descricao, i.vencedor, i.compra, i.objeto, i.processo].some(v => normalize(v).includes(term));
                 const mStatus = statusFilter === 'all' || i.situacaoItem === statusFilter;
                 const mYear = yearFilter === 'all' || i.ano == yearFilter;
@@ -377,6 +483,7 @@
         function executeSearch() {
             search = document.getElementById('search-input').value;
             page = 1;
+            updateFiltered();
             render();
         }
 
@@ -384,13 +491,6 @@
             page = p;
             render();
             window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function toggleRow(idx) {
-            const row = document.getElementById(`details-${idx}`);
-            const icon = document.getElementById(`icon-${idx}`);
-            const isShow = row.classList.toggle('show');
-            icon.style.transform = isShow ? 'rotate(90deg)' : 'rotate(0deg)';
         }
 
         // --- Events ---
@@ -402,19 +502,35 @@
         document.getElementById('year-select').addEventListener('change', (e) => {
             yearFilter = e.target.value;
             page = 1;
+            updateFiltered();
             render();
         });
 
         document.getElementById('status-select').addEventListener('change', (e) => {
             statusFilter = e.target.value;
             page = 1;
+            updateFiltered();
             render();
         });
 
         document.getElementById('modalidade-select').addEventListener('change', (e) => {
             modalidadeFilter = e.target.value;
             page = 1;
+            updateFiltered();
             render();
+        });
+
+        document.getElementById('modal-next').addEventListener('click', nextItem);
+        document.getElementById('modal-prev').addEventListener('click', prevItem);
+
+        // Teclado
+        window.addEventListener('keydown', (e) => {
+            const modal = document.getElementById('details-modal');
+            if (modal.classList.contains('modal-hidden')) return;
+
+            if (e.key === 'Escape') closeModal();
+            if (e.key === 'ArrowRight') nextItem();
+            if (e.key === 'ArrowLeft') prevItem();
         });
 
         // --- Init ---
