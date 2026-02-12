@@ -3,6 +3,7 @@ import json
 import time
 import os
 import locale
+import re
 from datetime import datetime
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -17,22 +18,25 @@ class PNCPRefresher:
     BASE_URL_INTEGRACAO = "https://pncp.gov.br/api/pncp"
     
     def __init__(self, cnpj="13650403000128"):
-        self.cnpj = cnpj
+        self.cnpj = self.limpar_cnpj(cnpj)
         self.session = self.setup_session()
-        self.cooldown_time = 0.5 # Cooldown reduzido para refresh
+        self.cooldown_time = 1.0 # Aumentado para evitar bloqueios
+
+    def limpar_cnpj(self, cnpj):
+        return re.sub(r'\D', '', str(cnpj))
 
     def setup_session(self):
         session = requests.Session()
         retry_strategy = Retry(
             total=5,
-            backoff_factor=1,
+            backoff_factor=2, # Aumentado o backoff
             status_forcelist=[429, 500, 502, 503, 504],
             allowed_methods=["GET"]
         )
         adapter = HTTPAdapter(max_retries=retry_strategy)
         session.mount("https://", adapter)
         session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Bot-Refresher-PNCP",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PNCP-Explorer-Refresher/1.0",
             "Accept": "application/json"
         })
         return session
@@ -43,21 +47,29 @@ class PNCPRefresher:
             response = self.session.get(url, params=params, timeout=30)
             if response.status_code == 200:
                 return response.json()
-            return None
+            elif response.status_code == 404:
+                # print(f"  [!] Recurso não encontrado (404): {url}")
+                return None
+            else:
+                print(f"  [!] Erro {response.status_code} na URL: {url}")
+                return None
         except Exception as e:
-            print(f"Erro na requisição: {e}")
+            print(f"  [!] Erro na requisição: {e}")
             return None
 
     def obter_dados_contratacao(self, cnpj, ano, sequencial):
-        url = f"{self.BASE_URL_INTEGRACAO}/v1/orgaos/{cnpj}/compras/{ano}/{sequencial}"
+        cnpj_limpo = self.limpar_cnpj(cnpj)
+        url = f"{self.BASE_URL_INTEGRACAO}/v1/orgaos/{cnpj_limpo}/compras/{ano}/{sequencial}"
         return self._safe_request(url)
 
     def obter_item_especifico(self, cnpj, ano, sequencial, numero_item):
-        url = f"{self.BASE_URL_INTEGRACAO}/v1/orgaos/{cnpj}/compras/{ano}/{sequencial}/itens/{numero_item}"
+        cnpj_limpo = self.limpar_cnpj(cnpj)
+        url = f"{self.BASE_URL_INTEGRACAO}/v1/orgaos/{cnpj_limpo}/compras/{ano}/{sequencial}/itens/{numero_item}"
         return self._safe_request(url)
 
     def obter_resultados_item(self, cnpj, ano, sequencial, numero_item):
-        url = f"{self.BASE_URL_INTEGRACAO}/v1/orgaos/{cnpj}/compras/{ano}/{sequencial}/itens/{numero_item}/resultados"
+        cnpj_limpo = self.limpar_cnpj(cnpj)
+        url = f"{self.BASE_URL_INTEGRACAO}/v1/orgaos/{cnpj_limpo}/compras/{ano}/{sequencial}/itens/{numero_item}/resultados"
         resultados = self._safe_request(url)
         if isinstance(resultados, list): return resultados
         if isinstance(resultados, dict): return [resultados]
@@ -68,8 +80,10 @@ class PNCPRefresher:
             dt_pub_raw = contratacao.get('dataPublicacaoPncp', '')
             dt_pub_fmt = ""
             if dt_pub_raw:
-                dt_obj = datetime.fromisoformat(dt_pub_raw.replace('Z', '+00:00'))
-                dt_pub_fmt = dt_obj.strftime("%a %b %d %Y %H:%M:%S GMT-0300 (Brasilia Standard Time)")
+                try:
+                    dt_obj = datetime.fromisoformat(dt_pub_raw.replace('Z', '+00:00'))
+                    dt_pub_fmt = dt_obj.strftime("%a %b %d %Y %H:%M:%S GMT-0300 (Brasilia Standard Time)")
+                except: pass
 
             vencedor_nome = "SEM RESULTADO"
             vencedor_cnpj = ""
@@ -88,8 +102,10 @@ class PNCPRefresher:
                 qtd_homologada = res.get('quantidadeHomologada', 0)
                 dt_res_raw = res.get('dataResultado', '')
                 if dt_res_raw:
-                    dt_res_obj = datetime.fromisoformat(dt_res_raw.replace('Z', '+00:00'))
-                    data_resultado_fmt = dt_res_obj.strftime("%a %b %d %Y %H:%M:%S GMT-0300 (Brasilia Standard Time)")
+                    try:
+                        dt_res_obj = datetime.fromisoformat(dt_res_raw.replace('Z', '+00:00'))
+                        data_resultado_fmt = dt_res_obj.strftime("%a %b %d %Y %H:%M:%S GMT-0300 (Brasilia Standard Time)")
+                    except: pass
 
             return {
                 "orgao": contratacao.get('orgaoEntidade', {}).get('razaoSocial', ""),
@@ -109,7 +125,7 @@ class PNCPRefresher:
                 "valorTotalHomologado": valor_total_homologado,
                 "qtdHomologada": qtd_homologada,
                 "situacaoItem": item.get('situacaoCompraItemNome', ""),
-                "linkPNCP": f"https://pncp.gov.br/app/editais/{contratacao.get('orgaoEntidade', {}).get('cnpj')}/{contratacao.get('anoCompra')}/{contratacao.get('sequencialCompra')}",
+                "linkPNCP": f"https://pncp.gov.br/app/editais/{self.limpar_cnpj(contratacao.get('orgaoEntidade', {}).get('cnpj'))}/{contratacao.get('anoCompra')}/{contratacao.get('sequencialCompra')}",
                 "processo": contratacao.get('processo', ""),
                 "dataPublicacao": dt_pub_fmt,
                 "dataResultado": data_resultado_fmt
@@ -136,8 +152,7 @@ def main():
 
     refresher = PNCPRefresher()
     
-    # Filtramos itens que estão "Em andamento"
-    # Também incluímos "Publicada" ou outros status que podem mudar
+    # Status que indicam que o item ainda pode mudar
     status_para_atualizar = ["Em andamento", "Publicada", "Divulgada", "Em Aberto"]
     
     indices_para_atualizar = [
@@ -146,53 +161,48 @@ def main():
     ]
 
     if not indices_para_atualizar:
-        print("Nenhum item com status 'Em andamento' encontrado para atualizar.")
+        print("Nenhum item com status pendente encontrado.")
         return
 
-    print(f"Verificando atualização para {len(indices_para_atualizar)} itens...")
+    # Limitamos a 200 itens por execução para evitar bloqueios do PNCP
+    # O GitHub Actions rodará diariamente, então ele acabará atualizando tudo aos poucos
+    MAX_ITENS = 200
+    processar_agora = indices_para_atualizar[:MAX_ITENS]
+
+    print(f"Verificando atualização para {len(processar_agora)} itens (de um total de {len(indices_para_atualizar)} pendentes)...")
     
     alteracoes = 0
     cache_compras = {}
 
-    for idx in indices_para_atualizar:
+    for idx in processar_agora:
         item_antigo = dados_lista[idx]
         try:
-            # Extraímos os dados do link
             link = item_antigo.get('linkPNCP', '')
-            # Formato esperado: https://pncp.gov.br/app/editais/{cnpj}/{ano}/{sequencial}
-            partes = link.split('/')
-            if len(partes) < 3:
-                print(f"Link inválido para item {item_antigo.get('compra')}: {link}")
+            # Extração robusta do CNPJ, Ano e Sequencial do link
+            match = re.search(r'editais/(\d+)/(\d+)/(\d+)', link)
+            if not match:
+                print(f"  [!] Link fora do padrão: {link}")
                 continue
                 
-            cnpj_orgao = partes[-3]
-            ano = partes[-2]
-            sequencial = partes[-1]
+            cnpj_orgao, ano, sequencial = match.groups()
             num_item = item_antigo.get('itemNo')
 
-            # Busca dados da compra (com cache para evitar requisições repetidas da mesma compra)
             if sequencial not in cache_compras:
                 cache_compras[sequencial] = refresher.obter_dados_contratacao(cnpj_orgao, ano, sequencial)
             
             contratacao_nova = cache_compras[sequencial]
             if not contratacao_nova:
-                print(f"Não foi possível obter dados da compra {ano}/{sequencial}")
                 continue
 
-            # Busca dados atualizados do item
             item_novo_bruto = refresher.obter_item_especifico(cnpj_orgao, ano, sequencial, num_item)
             if not item_novo_bruto:
-                print(f"Não foi possível obter dados do item {num_item} da compra {sequencial}")
                 continue
 
-            # Busca resultados (vencedores)
             item_novo_bruto['resultados_vencedores'] = refresher.obter_resultados_item(cnpj_orgao, ano, sequencial, num_item)
-            
-            # Formata para o padrão do HTML
             item_atualizado = refresher.formatar_para_html(contratacao_nova, item_novo_bruto)
             
             if item_atualizado:
-                # Verifica se houve mudança real
+                # Só atualiza se houver mudança de status ou novos dados de vencedor/valor
                 if (item_atualizado['situacaoItem'] != item_antigo['situacaoItem'] or 
                     item_atualizado['vencedor'] != item_antigo['vencedor'] or
                     item_atualizado['valorTotalHomologado'] != item_antigo['valorTotalHomologado']):
@@ -201,7 +211,7 @@ def main():
                     dados_lista[idx] = item_atualizado
                     alteracoes += 1
         except Exception as e:
-            print(f"Erro ao processar item {item_antigo.get('compra')}: {e}")
+            print(f"  [!] Erro ao processar {item_antigo.get('compra')}: {e}")
 
     if alteracoes > 0:
         if is_dict:
@@ -213,9 +223,9 @@ def main():
             
         with open(FILE_NAME, 'w', encoding='utf-8') as f:
             json.dump(content, f, indent=4, ensure_ascii=False)
-        print(f"\nSucesso! {alteracoes} registros foram atualizados.")
+        print(f"\nSucesso! {alteracoes} registros atualizados.")
     else:
-        print("\nNenhuma alteração encontrada nos itens verificados.")
+        print("\nNenhuma alteração detectada nesta rodada.")
 
 if __name__ == "__main__":
     main()
