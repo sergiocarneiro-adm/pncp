@@ -15,14 +15,14 @@ except:
     pass 
 
 class PNCPRefresher:
-    # Removido o 'https://' do início para tratar dinamicamente se necessário
-    # Adicionada a barra final para evitar o erro 301
+    # A imagem mostrou que o endpoint mudou para /api/consulta/
+    BASE_URL_CONSULTA = "https://pncp.gov.br/api/consulta"
     BASE_URL_INTEGRACAO = "https://pncp.gov.br/api/pncp"
     
     def __init__(self, cnpj="13650403000128"):
         self.cnpj = self.limpar_cnpj(cnpj)
         self.session = self.setup_session()
-        self.cooldown_time = 1.2 # Aumentado levemente para estabilidade
+        self.cooldown_time = 1.2
 
     def limpar_cnpj(self, cnpj):
         return re.sub(r'\D', '', str(cnpj))
@@ -38,7 +38,7 @@ class PNCPRefresher:
         adapter = HTTPAdapter(max_retries=retry_strategy)
         session.mount("https://", adapter)
         session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PNCP-Explorer-Refresher/1.1",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PNCP-Explorer-Refresher/1.2",
             "Accept": "application/json"
         })
         return session
@@ -46,7 +46,6 @@ class PNCPRefresher:
     def _safe_request(self, url, params=None):
         try:
             time.sleep(self.cooldown_time)
-            # allow_redirects=True é o padrão, mas reforçamos aqui
             response = self.session.get(url, params=params, timeout=30, allow_redirects=True)
             
             if response.status_code == 200:
@@ -62,20 +61,19 @@ class PNCPRefresher:
 
     def obter_dados_contratacao(self, cnpj, ano, sequencial):
         cnpj_limpo = self.limpar_cnpj(cnpj)
-        # Adicionada a barra final para evitar 301
-        url = f"{self.BASE_URL_INTEGRACAO}/v1/orgaos/{cnpj_limpo}/compras/{ano}/{sequencial}/"
+        # NOVO ENDPOINT DE CONSULTA (conforme a imagem do erro 301)
+        url = f"{self.BASE_URL_CONSULTA}/v1/orgaos/{cnpj_limpo}/compras/{ano}/{sequencial}"
         return self._safe_request(url)
 
     def obter_item_especifico(self, cnpj, ano, sequencial, numero_item):
         cnpj_limpo = self.limpar_cnpj(cnpj)
-        # Adicionada a barra final para evitar 301
-        url = f"{self.BASE_URL_INTEGRACAO}/v1/orgaos/{cnpj_limpo}/compras/{ano}/{sequencial}/itens/{numero_item}/"
+        # Itens e Resultados geralmente permanecem na API de integração/pncp
+        url = f"{self.BASE_URL_INTEGRACAO}/v1/orgaos/{cnpj_limpo}/compras/{ano}/{sequencial}/itens/{numero_item}"
         return self._safe_request(url)
 
     def obter_resultados_item(self, cnpj, ano, sequencial, numero_item):
         cnpj_limpo = self.limpar_cnpj(cnpj)
-        # Adicionada a barra final para evitar 301
-        url = f"{self.BASE_URL_INTEGRACAO}/v1/orgaos/{cnpj_limpo}/compras/{ano}/{sequencial}/itens/{numero_item}/resultados/"
+        url = f"{self.BASE_URL_INTEGRACAO}/v1/orgaos/{cnpj_limpo}/compras/{ano}/{sequencial}/itens/{numero_item}/resultados"
         resultados = self._safe_request(url)
         if isinstance(resultados, list): return resultados
         if isinstance(resultados, dict): return [resultados]
