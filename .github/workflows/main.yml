@@ -31,8 +31,10 @@ jobs:
       - name: 4. Instalar Dependências
         run: pip install -r requirements.txt
 
-      - name: 5. Executar Script de Automação
-        run: python automacao_pncp.py
+      - name: 5. Executar Scripts de Automação
+        run: |
+          python refresh_pncp.py    # Primeiro atualiza o que já existe
+          python automacao_pncp.py  # Depois busca o que é novo
         env:
           LANG: en_US.UTF-8
           LC_ALL: en_US.UTF-8
