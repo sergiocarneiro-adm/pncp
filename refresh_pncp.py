@@ -3,7 +3,7 @@ import json
 import time
 import os
 import locale
-from datetime import datetime, timedelta
+from datetime import datetime
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -19,7 +19,7 @@ class PNCPRefresher:
     def __init__(self, cnpj="13650403000128"):
         self.cnpj = cnpj
         self.session = self.setup_session()
-        self.cooldown_time = 0.5 # Menor cooldown para refresh
+        self.cooldown_time = 0.5 # Cooldown reduzido para refresh
 
     def setup_session(self):
         session = requests.Session()
@@ -118,94 +118,104 @@ class PNCPRefresher:
             print(f"Erro na formatação: {e}")
             return None
 
-# --- LOGICA DE ATUALIZACAO ---
-FILE_NAME = 'dados.json'
-
 def main():
+    FILE_NAME = 'dados.json'
     if not os.path.exists(FILE_NAME):
-        print("Arquivo dados.json não encontrado.")
+        print(f"Arquivo {FILE_NAME} não encontrado.")
         return
 
     with open(FILE_NAME, 'r', encoding='utf-8') as f:
         content = json.load(f)
     
     is_dict = isinstance(content, dict)
-    dados = content.get('data', []) if is_dict else content
+    dados_lista = content.get('data', []) if is_dict else content
     
-    if not dados:
-        print("Nenhum dado para atualizar.")
+    if not dados_lista:
+        print("Nenhum dado encontrado no JSON.")
         return
 
     refresher = PNCPRefresher()
     
-    # Filtramos itens que NÃO estão finalizados (Homologado ou Fracassado)
-    # E focamos nos anos recentes para não sobrecarregar
-    status_finais = ["Homologado", "Fracassado", "Anulado", "Revogado"]
-    itens_para_atualizar = [
-        (idx, item) for idx, item in enumerate(dados) 
-        if item.get('situacaoItem') not in status_finais and item.get('ano') in [2025, 2026]
+    # Filtramos itens que estão "Em andamento"
+    # Também incluímos "Publicada" ou outros status que podem mudar
+    status_para_atualizar = ["Em andamento", "Publicada", "Divulgada", "Em Aberto"]
+    
+    indices_para_atualizar = [
+        idx for idx, item in enumerate(dados_lista) 
+        if item.get('situacaoItem') in status_para_atualizar
     ]
 
-    if not itens_para_atualizar:
-        print("Todos os itens recentes já estão com status final.")
+    if not indices_para_atualizar:
+        print("Nenhum item com status 'Em andamento' encontrado para atualizar.")
         return
 
-    print(f"Encontrados {len(itens_para_atualizar)} itens para verificar atualização...")
+    print(f"Verificando atualização para {len(indices_para_atualizar)} itens...")
     
     alteracoes = 0
-    # Cache para não repetir requisição da mesma compra (vários itens)
     cache_compras = {}
 
-    for idx, item_antigo in itens_para_atualizar:
+    for idx in indices_para_atualizar:
+        item_antigo = dados_lista[idx]
         try:
-            # Extraímos o sequencial do link
+            # Extraímos os dados do link
             link = item_antigo.get('linkPNCP', '')
+            # Formato esperado: https://pncp.gov.br/app/editais/{cnpj}/{ano}/{sequencial}
             partes = link.split('/')
+            if len(partes) < 3:
+                print(f"Link inválido para item {item_antigo.get('compra')}: {link}")
+                continue
+                
             cnpj_orgao = partes[-3]
             ano = partes[-2]
             sequencial = partes[-1]
             num_item = item_antigo.get('itemNo')
 
-            # Busca dados da compra (cache)
+            # Busca dados da compra (com cache para evitar requisições repetidas da mesma compra)
             if sequencial not in cache_compras:
                 cache_compras[sequencial] = refresher.obter_dados_contratacao(cnpj_orgao, ano, sequencial)
             
             contratacao_nova = cache_compras[sequencial]
-            if not contratacao_nova: continue
+            if not contratacao_nova:
+                print(f"Não foi possível obter dados da compra {ano}/{sequencial}")
+                continue
 
-            # Busca dados do item
+            # Busca dados atualizados do item
             item_novo_bruto = refresher.obter_item_especifico(cnpj_orgao, ano, sequencial, num_item)
-            if not item_novo_bruto: continue
+            if not item_novo_bruto:
+                print(f"Não foi possível obter dados do item {num_item} da compra {sequencial}")
+                continue
 
-            # Busca resultados do item
+            # Busca resultados (vencedores)
             item_novo_bruto['resultados_vencedores'] = refresher.obter_resultados_item(cnpj_orgao, ano, sequencial, num_item)
             
-            # Formata
+            # Formata para o padrão do HTML
             item_atualizado = refresher.formatar_para_html(contratacao_nova, item_novo_bruto)
             
             if item_atualizado:
-                # Verifica se mudou algo importante (status ou vencedor)
+                # Verifica se houve mudança real
                 if (item_atualizado['situacaoItem'] != item_antigo['situacaoItem'] or 
-                    item_atualizado['vencedor'] != item_antigo['vencedor']):
+                    item_atualizado['vencedor'] != item_antigo['vencedor'] or
+                    item_atualizado['valorTotalHomologado'] != item_antigo['valorTotalHomologado']):
                     
                     print(f"  [!] Atualizado: {item_antigo['compra']} Item {num_item} -> {item_atualizado['situacaoItem']}")
-                    dados[idx] = item_atualizado
+                    dados_lista[idx] = item_atualizado
                     alteracoes += 1
         except Exception as e:
             print(f"Erro ao processar item {item_antigo.get('compra')}: {e}")
 
     if alteracoes > 0:
         if is_dict:
-            content['data'] = dados
+            content['data'] = dados_lista
+            content['totalRegistros'] = len(dados_lista)
             content['geradoEm'] = datetime.now().isoformat()
         else:
-            content = dados
+            content = dados_lista
             
         with open(FILE_NAME, 'w', encoding='utf-8') as f:
             json.dump(content, f, indent=4, ensure_ascii=False)
-        print(f"\nSucesso! {alteracoes} registros foram atualizados com novas informações.")
+        print(f"\nSucesso! {alteracoes} registros foram atualizados.")
     else:
-        print("\nNenhuma alteração de status encontrada nos itens verificados.")
+        print("\nNenhuma alteração encontrada nos itens verificados.")
 
 if __name__ == "__main__":
     main()
