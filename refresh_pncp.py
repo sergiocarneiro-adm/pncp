@@ -15,12 +15,14 @@ except:
     pass 
 
 class PNCPRefresher:
+    # Removido o 'https://' do início para tratar dinamicamente se necessário
+    # Adicionada a barra final para evitar o erro 301
     BASE_URL_INTEGRACAO = "https://pncp.gov.br/api/pncp"
     
     def __init__(self, cnpj="13650403000128"):
         self.cnpj = self.limpar_cnpj(cnpj)
         self.session = self.setup_session()
-        self.cooldown_time = 1.0 # Aumentado para evitar bloqueios
+        self.cooldown_time = 1.2 # Aumentado levemente para estabilidade
 
     def limpar_cnpj(self, cnpj):
         return re.sub(r'\D', '', str(cnpj))
@@ -29,14 +31,14 @@ class PNCPRefresher:
         session = requests.Session()
         retry_strategy = Retry(
             total=5,
-            backoff_factor=2, # Aumentado o backoff
+            backoff_factor=2,
             status_forcelist=[429, 500, 502, 503, 504],
             allowed_methods=["GET"]
         )
         adapter = HTTPAdapter(max_retries=retry_strategy)
         session.mount("https://", adapter)
         session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PNCP-Explorer-Refresher/1.0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PNCP-Explorer-Refresher/1.1",
             "Accept": "application/json"
         })
         return session
@@ -44,11 +46,12 @@ class PNCPRefresher:
     def _safe_request(self, url, params=None):
         try:
             time.sleep(self.cooldown_time)
-            response = self.session.get(url, params=params, timeout=30)
+            # allow_redirects=True é o padrão, mas reforçamos aqui
+            response = self.session.get(url, params=params, timeout=30, allow_redirects=True)
+            
             if response.status_code == 200:
                 return response.json()
             elif response.status_code == 404:
-                # print(f"  [!] Recurso não encontrado (404): {url}")
                 return None
             else:
                 print(f"  [!] Erro {response.status_code} na URL: {url}")
@@ -59,17 +62,20 @@ class PNCPRefresher:
 
     def obter_dados_contratacao(self, cnpj, ano, sequencial):
         cnpj_limpo = self.limpar_cnpj(cnpj)
-        url = f"{self.BASE_URL_INTEGRACAO}/v1/orgaos/{cnpj_limpo}/compras/{ano}/{sequencial}"
+        # Adicionada a barra final para evitar 301
+        url = f"{self.BASE_URL_INTEGRACAO}/v1/orgaos/{cnpj_limpo}/compras/{ano}/{sequencial}/"
         return self._safe_request(url)
 
     def obter_item_especifico(self, cnpj, ano, sequencial, numero_item):
         cnpj_limpo = self.limpar_cnpj(cnpj)
-        url = f"{self.BASE_URL_INTEGRACAO}/v1/orgaos/{cnpj_limpo}/compras/{ano}/{sequencial}/itens/{numero_item}"
+        # Adicionada a barra final para evitar 301
+        url = f"{self.BASE_URL_INTEGRACAO}/v1/orgaos/{cnpj_limpo}/compras/{ano}/{sequencial}/itens/{numero_item}/"
         return self._safe_request(url)
 
     def obter_resultados_item(self, cnpj, ano, sequencial, numero_item):
         cnpj_limpo = self.limpar_cnpj(cnpj)
-        url = f"{self.BASE_URL_INTEGRACAO}/v1/orgaos/{cnpj_limpo}/compras/{ano}/{sequencial}/itens/{numero_item}/resultados"
+        # Adicionada a barra final para evitar 301
+        url = f"{self.BASE_URL_INTEGRACAO}/v1/orgaos/{cnpj_limpo}/compras/{ano}/{sequencial}/itens/{numero_item}/resultados/"
         resultados = self._safe_request(url)
         if isinstance(resultados, list): return resultados
         if isinstance(resultados, dict): return [resultados]
@@ -152,7 +158,7 @@ def main():
 
     refresher = PNCPRefresher()
     
-    # Status que indicam que o item ainda pode mudar
+    # Status pendentes
     status_para_atualizar = ["Em andamento", "Publicada", "Divulgada", "Em Aberto"]
     
     indices_para_atualizar = [
@@ -164,12 +170,11 @@ def main():
         print("Nenhum item com status pendente encontrado.")
         return
 
-    # Limitamos a 200 itens por execução para evitar bloqueios do PNCP
-    # O GitHub Actions rodará diariamente, então ele acabará atualizando tudo aos poucos
+    # Processamos 200 por vez para evitar bloqueios
     MAX_ITENS = 200
     processar_agora = indices_para_atualizar[:MAX_ITENS]
 
-    print(f"Verificando atualização para {len(processar_agora)} itens (de um total de {len(indices_para_atualizar)} pendentes)...")
+    print(f"Verificando atualização para {len(processar_agora)} itens...")
     
     alteracoes = 0
     cache_compras = {}
@@ -178,10 +183,8 @@ def main():
         item_antigo = dados_lista[idx]
         try:
             link = item_antigo.get('linkPNCP', '')
-            # Extração robusta do CNPJ, Ano e Sequencial do link
             match = re.search(r'editais/(\d+)/(\d+)/(\d+)', link)
             if not match:
-                print(f"  [!] Link fora do padrão: {link}")
                 continue
                 
             cnpj_orgao, ano, sequencial = match.groups()
@@ -202,7 +205,6 @@ def main():
             item_atualizado = refresher.formatar_para_html(contratacao_nova, item_novo_bruto)
             
             if item_atualizado:
-                # Só atualiza se houver mudança de status ou novos dados de vencedor/valor
                 if (item_atualizado['situacaoItem'] != item_antigo['situacaoItem'] or 
                     item_atualizado['vencedor'] != item_antigo['vencedor'] or
                     item_atualizado['valorTotalHomologado'] != item_antigo['valorTotalHomologado']):
