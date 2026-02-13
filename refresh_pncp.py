@@ -15,14 +15,13 @@ except:
     pass 
 
 class PNCPRefresher:
-    # A imagem mostrou que o endpoint mudou para /api/consulta/
     BASE_URL_CONSULTA = "https://pncp.gov.br/api/consulta"
     BASE_URL_INTEGRACAO = "https://pncp.gov.br/api/pncp"
     
     def __init__(self, cnpj="13650403000128"):
         self.cnpj = self.limpar_cnpj(cnpj)
         self.session = self.setup_session()
-        self.cooldown_time = 1.2
+        self.cooldown_time = 1.5 # Delay para evitar bloqueio em varreduras longas
 
     def limpar_cnpj(self, cnpj):
         return re.sub(r'\D', '', str(cnpj))
@@ -38,7 +37,7 @@ class PNCPRefresher:
         adapter = HTTPAdapter(max_retries=retry_strategy)
         session.mount("https://", adapter)
         session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PNCP-Explorer-Refresher/1.2",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PNCP-Explorer-Refresher/1.5",
             "Accept": "application/json"
         })
         return session
@@ -50,10 +49,12 @@ class PNCPRefresher:
             
             if response.status_code == 200:
                 return response.json()
+            elif response.status_code == 204:
+                return None
             elif response.status_code == 404:
                 return None
             else:
-                print(f"  [!] Erro {response.status_code} na URL: {url}")
+                print(f"  [!] Aviso: Status {response.status_code} na URL: {url}")
                 return None
         except Exception as e:
             print(f"  [!] Erro na requisição: {e}")
@@ -61,13 +62,11 @@ class PNCPRefresher:
 
     def obter_dados_contratacao(self, cnpj, ano, sequencial):
         cnpj_limpo = self.limpar_cnpj(cnpj)
-        # NOVO ENDPOINT DE CONSULTA (conforme a imagem do erro 301)
         url = f"{self.BASE_URL_CONSULTA}/v1/orgaos/{cnpj_limpo}/compras/{ano}/{sequencial}"
         return self._safe_request(url)
 
     def obter_item_especifico(self, cnpj, ano, sequencial, numero_item):
         cnpj_limpo = self.limpar_cnpj(cnpj)
-        # Itens e Resultados geralmente permanecem na API de integração/pncp
         url = f"{self.BASE_URL_INTEGRACAO}/v1/orgaos/{cnpj_limpo}/compras/{ano}/{sequencial}/itens/{numero_item}"
         return self._safe_request(url)
 
@@ -138,6 +137,10 @@ class PNCPRefresher:
             print(f"Erro na formatação: {e}")
             return None
 
+def salvar_json(content, file_name):
+    with open(file_name, 'w', encoding='utf-8') as f:
+        json.dump(content, f, indent=4, ensure_ascii=False)
+
 def main():
     FILE_NAME = 'dados.json'
     if not os.path.exists(FILE_NAME):
@@ -164,21 +167,21 @@ def main():
         if item.get('situacaoItem') in status_para_atualizar
     ]
 
-    if not indices_para_atualizar:
+    total_pendentes = len(indices_para_atualizar)
+    if total_pendentes == 0:
         print("Nenhum item com status pendente encontrado.")
         return
 
-    # Processamos 200 por vez para evitar bloqueios
-    MAX_ITENS = 200
-    processar_agora = indices_para_atualizar[:MAX_ITENS]
-
-    print(f"Verificando atualização para {len(processar_agora)} itens...")
+    print(f"Iniciando varredura total para {total_pendentes} itens pendentes...")
     
     alteracoes = 0
+    processados = 0
     cache_compras = {}
 
-    for idx in processar_agora:
+    for idx in indices_para_atualizar:
         item_antigo = dados_lista[idx]
+        processados += 1
+        
         try:
             link = item_antigo.get('linkPNCP', '')
             match = re.search(r'editais/(\d+)/(\d+)/(\d+)', link)
@@ -207,12 +210,28 @@ def main():
                     item_atualizado['vencedor'] != item_antigo['vencedor'] or
                     item_atualizado['valorTotalHomologado'] != item_antigo['valorTotalHomologado']):
                     
-                    print(f"  [!] Atualizado: {item_antigo['compra']} Item {num_item} -> {item_atualizado['situacaoItem']}")
+                    print(f"[{processados}/{total_pendentes}] ATUALIZADO: {item_antigo['compra']} Item {num_item} -> {item_atualizado['situacaoItem']}")
                     dados_lista[idx] = item_atualizado
                     alteracoes += 1
+                else:
+                    if processados % 50 == 0:
+                        print(f"[{processados}/{total_pendentes}] Verificado (sem mudanças)...")
+
+            # Salvamento progressivo a cada 50 itens para não perder progresso
+            if processados % 50 == 0 and alteracoes > 0:
+                if is_dict:
+                    content['data'] = dados_lista
+                    content['totalRegistros'] = len(dados_lista)
+                    content['geradoEm'] = datetime.now().isoformat()
+                else:
+                    content = dados_lista
+                salvar_json(content, FILE_NAME)
+                print(f"  >> Progresso salvo ({alteracoes} alterações até agora).")
+
         except Exception as e:
             print(f"  [!] Erro ao processar {item_antigo.get('compra')}: {e}")
 
+    # Salvamento final
     if alteracoes > 0:
         if is_dict:
             content['data'] = dados_lista
@@ -220,12 +239,10 @@ def main():
             content['geradoEm'] = datetime.now().isoformat()
         else:
             content = dados_lista
-            
-        with open(FILE_NAME, 'w', encoding='utf-8') as f:
-            json.dump(content, f, indent=4, ensure_ascii=False)
-        print(f"\nSucesso! {alteracoes} registros atualizados.")
+        salvar_json(content, FILE_NAME)
+        print(f"\nVarredura concluída! Total de {alteracoes} registros atualizados.")
     else:
-        print("\nNenhuma alteração detectada nesta rodada.")
+        print("\nVarredura concluída. Nenhuma alteração detectada.")
 
 if __name__ == "__main__":
     main()
