@@ -33,8 +33,9 @@ jobs:
 
       - name: 5. Executar Scripts de Automação
         run: |
-          python refresh_pncp.py    # Primeiro atualiza o que já existe
           python automacao_pncp.py  # Depois busca o que é novo
+          python refresh_pncp.py    # Primeiro atualiza o que já existe
+    
         env:
           LANG: en_US.UTF-8
           LC_ALL: en_US.UTF-8
