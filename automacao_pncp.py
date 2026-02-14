@@ -241,28 +241,43 @@ def main():
             except Exception as e:
                 print(f"Erro ao ler JSON: {e}")
 
-    data_hoje = datetime.now().strftime("%Y%m%d")
+    # MODIFICAÇÃO: Busca dos últimos 2 dias + hoje (total de 3 dias)
+    data_hoje = datetime.now()
+    data_inicio_busca = (data_hoje - timedelta(days=2)).strftime("%Y%m%d")
+    data_fim_busca = data_hoje.strftime("%Y%m%d")
     
-    if data_inicio > data_hoje:
-        print(f"Dados ja estao atualizados ate {data_inicio}. Nada a fazer.")
-        return
-
-    print(f"Iniciando sincronizacao de {data_inicio} ate {data_hoje}...")
+    print(f"Iniciando sincronizacao de {data_inicio_busca} ate {data_fim_busca} (ultimos 3 dias)...")
     importer = PNCPImporter()
-    novos_dados = importer.importar_tudo(data_inicio, data_hoje)
+    novos_dados = importer.importar_tudo(data_inicio_busca, data_fim_busca)
 
     if novos_dados:
-        if is_dict_format:
-            full_json_data['data'] = dados_carregados + novos_dados
-            full_json_data['totalRegistros'] = len(full_json_data['data'])
-            full_json_data['geradoEm'] = datetime.now().isoformat()
-            dados_finais = full_json_data
+        # Remove duplicatas baseado em chave única (ano + compra + itemNo)
+        chaves_existentes = set()
+        for item in dados_carregados:
+            chave = f"{item.get('ano')}_{item.get('compra')}_{item.get('itemNo')}"
+            chaves_existentes.add(chave)
+        
+        novos_dados_unicos = []
+        for item in novos_dados:
+            chave = f"{item.get('ano')}_{item.get('compra')}_{item.get('itemNo')}"
+            if chave not in chaves_existentes:
+                novos_dados_unicos.append(item)
+                chaves_existentes.add(chave)
+        
+        if novos_dados_unicos:
+            if is_dict_format:
+                full_json_data['data'] = dados_carregados + novos_dados_unicos
+                full_json_data['totalRegistros'] = len(full_json_data['data'])
+                full_json_data['geradoEm'] = datetime.now().isoformat()
+                dados_finais = full_json_data
+            else:
+                dados_finais = dados_carregados + novos_dados_unicos
+                
+            with open(FILE_NAME, 'w', encoding='utf-8') as f:
+                json.dump(dados_finais, f, indent=4, ensure_ascii=False)
+            print(f"\nSucesso! {len(novos_dados_unicos)} novos registros adicionados.")
         else:
-            dados_finais = dados_carregados + novos_dados
-            
-        with open(FILE_NAME, 'w', encoding='utf-8') as f:
-            json.dump(dados_finais, f, indent=4, ensure_ascii=False)
-        print(f"\nSucesso! {len(novos_dados)} novos registros adicionados.")
+            print("\nNenhuma nova contratacao encontrada (todas ja existiam).")
     else:
         print("\nNenhuma nova contratacao encontrada.")
 
