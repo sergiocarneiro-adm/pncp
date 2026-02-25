@@ -208,7 +208,6 @@ def main():
     dados_carregados = []
     is_dict_format = False
     full_json_data = {}
-    data_inicio = "20240101"
 
     if os.path.exists(FILE_NAME):
         with open(FILE_NAME, 'r', encoding='utf-8') as f:
@@ -221,32 +220,15 @@ def main():
                     full_json_data = content
                     dados_carregados = content.get('data', [])
                     is_dict_format = True
-                
-                if dados_carregados:
-                    datas_str = [c.get('dataPublicacao', '') for c in dados_carregados if c.get('dataPublicacao')]
-                    
-                    datas_convertidas = []
-                    for d in datas_str:
-                        try:
-                            # Extrai "Dec 29 2025" da string longa
-                            partes = d.split(' ')
-                            data_limpa = f"{partes[1]} {partes[2]} {partes[3]}"
-                            dt = datetime.strptime(data_limpa, "%b %d %Y")
-                            datas_convertidas.append(dt)
-                        except: continue
-                    
-                    if datas_convertidas:
-                        ultima_dt = max(datas_convertidas)
-                        data_inicio = (ultima_dt + timedelta(days=1)).strftime("%Y%m%d")
             except Exception as e:
                 print(f"Erro ao ler JSON: {e}")
 
-    # MODIFICAÇÃO: Busca dos últimos 2 dias + hoje (total de 3 dias)
+    # MODIFICAÇÃO: Busca dos últimos 360 dias
     data_hoje = datetime.now()
-    data_inicio_busca = (data_hoje - timedelta(days=2)).strftime("%Y%m%d")
+    data_inicio_busca = (data_hoje - timedelta(days=360)).strftime("%Y%m%d")
     data_fim_busca = data_hoje.strftime("%Y%m%d")
     
-    print(f"Iniciando sincronizacao de {data_inicio_busca} ate {data_fim_busca} (ultimos 3 dias)...")
+    print(f"Iniciando sincronizacao de {data_inicio_busca} ate {data_fim_busca} (ultimos 360 dias)...")
     importer = PNCPImporter()
     novos_dados = importer.importar_tudo(data_inicio_busca, data_fim_busca)
 
