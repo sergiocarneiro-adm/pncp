@@ -225,10 +225,10 @@ def main():
 
     # MODIFICAÇÃO: Busca dos últimos 360 dias
     data_hoje = datetime.now()
-    data_inicio_busca = (data_hoje - timedelta(days=360)).strftime("%Y%m%d")
+    data_inicio_busca = (data_hoje - timedelta(days=90)).strftime("%Y%m%d")
     data_fim_busca = data_hoje.strftime("%Y%m%d")
     
-    print(f"Iniciando sincronizacao de {data_inicio_busca} ate {data_fim_busca} (ultimos 360 dias)...")
+    print(f"Iniciando sincronizacao de {data_inicio_busca} ate {data_fim_busca} (ultimos 90 dias)...")
     importer = PNCPImporter()
     novos_dados = importer.importar_tudo(data_inicio_busca, data_fim_busca)
 
@@ -265,3 +265,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
