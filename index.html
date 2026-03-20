@@ -309,7 +309,11 @@
         // --- Rendering ---
         function renderRecentCards() {
             const container = document.getElementById('recent-items-container');
-            const recent = [...allData].slice(-4).reverse();
+            const recent = [...allData].sort((a, b) => {
+                const dateA = a.dataPublicacao ? new Date(a.dataPublicacao) : new Date(0);
+                const dateB = b.dataPublicacao ? new Date(b.dataPublicacao) : new Date(0);
+                return dateB - dateA;
+            }).slice(0, 4);
             
             container.innerHTML = recent.map(item => `
                 <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-primary-500 transition-colors cursor-pointer group" onclick="openModalByItemData(${JSON.stringify(item).replace(/"/g, '&quot;')})">
@@ -482,6 +486,10 @@
                 const mYear = yearFilter === 'all' || i.ano == yearFilter;
                 const mModalidade = modalidadeFilter === 'all' || i.modalidade === modalidadeFilter;
                 return mSearch && mStatus && mYear && mModalidade;
+            }).sort((a, b) => {
+                const dateA = a.dataPublicacao ? new Date(a.dataPublicacao) : new Date(0);
+                const dateB = b.dataPublicacao ? new Date(b.dataPublicacao) : new Date(0);
+                return dateB - dateA;
             });
         }
 
