@@ -1,6 +1,6 @@
 {
-    "geradoEm": "2026-03-21T05:18:50.206034",
-    "totalRegistros": 12528,
+    "geradoEm": "2026-03-25T05:42:17.513802",
+    "totalRegistros": 12530,
     "stats": {
         "totalItens": 0,
         "valorTotalEstimado": 0,
@@ -288153,6 +288153,52 @@
             "processo": "261/2026",
             "dataPublicacao": "Fri Mar 20 2026 19:11:58 GMT-0300 (Brasilia Standard Time)",
             "dataResultado": ""
+        },
+        {
+            "orgao": "MUNICIPIO DE TEIXEIRA DE FREITAS",
+            "ano": 2026,
+            "compra": "PE-053",
+            "modalidade": "Pregão - Eletrônico",
+            "objeto": "Contratação de empresa especializada em serviços de engenharia para o fornecimento de bancas em estruturas metálicas (bancas de frutas e verduras), no município de Teixeira de Freitas – BA.",
+            "itemNo": 1,
+            "descricao": "BANCA EM ESTRUTURA METÁLICA",
+            "quantidade": 1.0,
+            "unidade": "UNID.",
+            "valorUnitEstimado": 1200887.1,
+            "valorTotalEstimado": 1200887.1,
+            "vencedor": "SEM RESULTADO",
+            "cnpjVencedor": "",
+            "valorUnitHomologado": 0,
+            "valorTotalHomologado": 0,
+            "qtdHomologada": 0,
+            "situacaoItem": "Em andamento",
+            "linkPNCP": "https://pncp.gov.br/app/editais/13650403000128/2026/135",
+            "processo": "309/2026",
+            "dataPublicacao": "Tue Mar 24 2026 21:21:57 GMT-0300 (Brasilia Standard Time)",
+            "dataResultado": ""
+        },
+        {
+            "orgao": "MUNICIPIO DE TEIXEIRA DE FREITAS",
+            "ano": 2026,
+            "compra": "2IL-060",
+            "modalidade": "Inexigibilidade",
+            "objeto": "empresa SERVIÇO DE APOIO ÀS MICRO E PEQUENAS EMPRESAS DO ESTADO DA BAHIA (SEBRAE) para LOCAÇÃO DE ESTANDE NO EVENTO SALÃO SEBRAE DAS CIDADES EMPREENDEDORAS 2026, a fim de atender as demandas do Gabinete do Prefeito do Município de Teixeira de Freitas.",
+            "itemNo": 1,
+            "descricao": "9903311943 Estande Prefeitura 9m²:área/espaço para exposição de eventos.",
+            "quantidade": 4.0,
+            "unidade": "DIA",
+            "valorUnitEstimado": 1750.0,
+            "valorTotalEstimado": 7000.0,
+            "vencedor": "SERV DE APOIO AS MICRO E PEQ EMPRESAS DO EST DA BAHIA",
+            "cnpjVencedor": "14797724000112",
+            "valorUnitHomologado": 1750.0,
+            "valorTotalHomologado": 7000.0,
+            "qtdHomologada": 4.0,
+            "situacaoItem": "Homologado",
+            "linkPNCP": "https://pncp.gov.br/app/editais/13650403000128/2026/134",
+            "processo": "308/2026",
+            "dataPublicacao": "Tue Mar 24 2026 19:30:59 GMT-0300 (Brasilia Standard Time)",
+            "dataResultado": "Tue Mar 24 2026 00:00:00 GMT-0300 (Brasilia Standard Time)"
         }
     ]
 }
