@@ -1,6 +1,6 @@
 {
-    "geradoEm": "2026-10-20T09:12:40.452140",
-    "totalRegistros": 15829,
+    "geradoEm": "2026-10-21T09:25:27.040374",
+    "totalRegistros": 15830,
     "stats": {
         "totalItens": 0,
         "valorTotalEstimado": 0,
@@ -364075,6 +364075,29 @@
             "linkPNCP": "https://pncp.gov.br/app/editais/13650403000128/2026/464",
             "processo": "1159/2026",
             "dataPublicacao": "Mon Oct 19 2026 17:28:55 GMT-0300 (Brasilia Standard Time)",
+            "dataResultado": ""
+        },
+        {
+            "orgao": "MUNICIPIO DE TEIXEIRA DE FREITAS",
+            "ano": 2026,
+            "compra": "PE-173",
+            "modalidade": "Pregão - Eletrônico",
+            "objeto": "Contratação de empresa especializada em fornecimento do medicamento NINTEDANIBE (OFEV®) (material de consumo),  a fim de atender as demandas da Secretaria Municipal de Saúde.",
+            "itemNo": 1,
+            "descricao": "10101200029 NINTEDANIBE (OFEV®) 150 MG:Fármacoantifibrótico e antineoplásico, quimicamente caracterizado comoum potente inibidor intracelular múltiplo de tirosina quinase. Atuapor meio do bloqueio competitivo do sítio de ligação do trifosfatode adenosina (ATP) nos receptores do fator de crescimentoderivado de plaquetas (PDGFR alfa e beta), do fator decrescimento fibroblástico (FGFR 1, 2 e 3) e do fator decrescimento endotelial vascular (VEGFR 1, 2 e 3). A inibiçãodestas vias de sinalização celular impede a proliferação, amigração e a diferenciação de fibroblastos e miofibroblastospulmonares, reduzindo a deposição anômala de colágeno e aremodelagem patológica da matriz extracelular. O medicamentoatua diretamente na desaceleração da taxa de declínio anual dacapacidade vital forçada (CVF), retardando a progressão dafibrose e atenuando a perda da função ventilatória pulmonar.",
+            "quantidade": 720.0,
+            "unidade": "CO",
+            "valorUnitEstimado": 0,
+            "valorTotalEstimado": 0,
+            "vencedor": "SEM RESULTADO",
+            "cnpjVencedor": "",
+            "valorUnitHomologado": 0,
+            "valorTotalHomologado": 0,
+            "qtdHomologada": 0,
+            "situacaoItem": "Em andamento",
+            "linkPNCP": "https://pncp.gov.br/app/editais/13650403000128/2026/465",
+            "processo": "1000 / 2026",
+            "dataPublicacao": "Tue Oct 20 2026 10:36:08 GMT-0300 (Brasilia Standard Time)",
             "dataResultado": ""
         }
     ]
