@@ -1,6 +1,6 @@
 {
-    "geradoEm": "2026-10-30T09:55:18.717503",
-    "totalRegistros": 16089,
+    "geradoEm": "2026-10-31T11:05:10.730947",
+    "totalRegistros": 16090,
     "stats": {
         "totalItens": 0,
         "valorTotalEstimado": 0,
@@ -370055,6 +370055,29 @@
             "linkPNCP": "https://pncp.gov.br/app/editais/13650403000128/2026/486",
             "processo": "738 / 2026",
             "dataPublicacao": "Thu Oct 29 2026 12:03:45 GMT-0300 (Brasilia Standard Time)",
+            "dataResultado": ""
+        },
+        {
+            "orgao": "MUNICIPIO DE TEIXEIRA DE FREITAS",
+            "ano": 2026,
+            "compra": "2-DLE-116",
+            "modalidade": "Dispensa",
+            "objeto": "3.1.\tContratação de empresa especializada na prestação de serviços de agenciamento de passagens aéreas nacionais, destinados ao atendimento das necessidades da Secretaria Municipal de Administração e demais Secretarias Municipais, abrangendo pesquisa, cotação, reserva, emissão, remarcação, cancelamento, reembolso e serviços correlatos, conforme o Termo de Referência e anexos.",
+            "itemNo": 1,
+            "descricao": "Contratação de empresa especializada no serviço de agenciamento de passagens aéreas: Oferecendo emissão de bilhetes de passagens de todas as companhias de transporte aéreo em trechos nacionais, incluindo reserva, emissão, transferência, marcação, remarcação e reembolso, despacho de bagagem.",
+            "quantidade": 1.0,
+            "unidade": "SERVIÇO",
+            "valorUnitEstimado": 0.0,
+            "valorTotalEstimado": 0.0,
+            "vencedor": "SEM RESULTADO",
+            "cnpjVencedor": "",
+            "valorUnitHomologado": 0,
+            "valorTotalHomologado": 0,
+            "qtdHomologada": 0,
+            "situacaoItem": "Em andamento",
+            "linkPNCP": "https://pncp.gov.br/app/editais/13650403000128/2026/487",
+            "processo": "1171/2026",
+            "dataPublicacao": "Fri Oct 30 2026 17:01:26 GMT-0300 (Brasilia Standard Time)",
             "dataResultado": ""
         }
     ]
