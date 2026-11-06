@@ -1,6 +1,6 @@
 {
-    "geradoEm": "2026-11-05T10:40:36.470029",
-    "totalRegistros": 16132,
+    "geradoEm": "2026-11-06T11:06:44.351037",
+    "totalRegistros": 16133,
     "stats": {
         "totalItens": 0,
         "valorTotalEstimado": 0,
@@ -371045,6 +371045,29 @@
             "processo": "1237/2026",
             "dataPublicacao": "Wed Nov 04 2026 17:46:05 GMT-0300 (Brasilia Standard Time)",
             "dataResultado": "Wed Nov 04 2026 00:00:00 GMT-0300 (Brasilia Standard Time)"
+        },
+        {
+            "orgao": "MUNICIPIO DE TEIXEIRA DE FREITAS",
+            "ano": 2026,
+            "compra": "PE-192",
+            "modalidade": "Pregão - Eletrônico",
+            "objeto": "Contratação de empresa especializada em fornecimento de GARRAFAS TÉRMICAS (material de consumo), quantidades e demais condições encontram-se detalhadas neste instrumento, a fim de atender as demandas da Secretaria Municipal de Educação.",
+            "itemNo": 1,
+            "descricao": "9900516399 GARRAFA TÉRMICA TIPO SQUEEZE,CAPACIDADE NOMINAL DE 950 ML:confeccionada em açoinoxidável ou material de qualidade e desempenho equivalente,resistente à corrosão e próprio para contato com alimentos ebebidas, com parede dupla e isolamento térmico a vácuo,adequada para bebidas quentes e frias. Tampa com fechamentorosqueável ou sistema equivalente, dotada de vedação emsilicone ou material atóxico equivalente, resistente a vazamentos.Componentes em contato com bebidas próprios para usoalimentar e livres de BPA, quando aplicável. Capacidadeaproximada de 950 ml, admitida tolerância técnica de até ±5%.Cor azul royal ou branca, conforme definição da Administração.Deverá permitir personalização com as logomarcas do Municípioe da Secretaria Municipal de Educação, mediante gravação,impressão ou processo equivalente, resistente ao uso e àhigienização",
+            "quantidade": 1500.0,
+            "unidade": "UN",
+            "valorUnitEstimado": 0,
+            "valorTotalEstimado": 0,
+            "vencedor": "SEM RESULTADO",
+            "cnpjVencedor": "",
+            "valorUnitHomologado": 0,
+            "valorTotalHomologado": 0,
+            "qtdHomologada": 0,
+            "situacaoItem": "Em andamento",
+            "linkPNCP": "https://pncp.gov.br/app/editais/13650403000128/2026/497",
+            "processo": "1098 / 2026",
+            "dataPublicacao": "Thu Nov 05 2026 15:20:20 GMT-0300 (Brasilia Standard Time)",
+            "dataResultado": ""
         }
     ]
 }
