@@ -23,6 +23,9 @@
         .modal-content { transition: transform 0.3s ease, opacity 0.3s ease; }
         .modal-hidden { opacity: 0; pointer-events: none; }
         .modal-hidden .modal-content { transform: scale(0.95); opacity: 0; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .item-card[open] .item-chevron { transform: rotate(180deg); }
+        .item-chevron { transition: transform 0.2s ease; }
     </style>
     <script>
         tailwind.config = {
@@ -60,10 +63,10 @@
 
         <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
             
-            <!-- Recent Items Grid -->
+            <!-- Recent Processes Grid -->
             <div class="mb-4 flex items-center justify-between">
                 <h2 class="text-sm font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                    <i class="fas fa-clock-rotate-left"></i> Últimas Contratações Importadas
+                    <i class="fas fa-clock-rotate-left"></i> Últimos Processos Importados
                 </h2>
             </div>
             <div id="recent-items-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -117,19 +120,20 @@
                         <thead>
                             <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
                                 <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Publicação</th>
-                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Ano</th>
-                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Item</th>
                                 <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Compra</th>
-                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Descrição</th>
-                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Processo</th>
+                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Objeto</th>
+                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Itens</th>
+                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Valor homologado</th>
+                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Situação</th>
                                 <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="table-body" class="divide-y divide-slate-200 dark:divide-slate-800">
                             <tr>
-                                <td colspan="7" class="px-6 py-12 text-center">
+                                <td colspan="8" class="px-6 py-12 text-center">
                                     <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-200 border-t-primary-600"></div>
-                                    <p class="mt-2 text-slate-500">Carregando dados...</p>
+                                    <p class="mt-2 text-slate-500">Organizando processos...</p>
                                 </td>
                             </tr>
                         </tbody>
@@ -148,17 +152,17 @@
         </footer>
     </div>
 
-    <!-- Modal de Detalhes -->
+    <!-- Modal de Detalhes do Processo -->
     <div id="details-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-hidden">
         <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm modal-backdrop" onclick="closeModal()"></div>
         
         <div class="relative bg-white dark:bg-slate-900 w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col modal-content">
             <!-- Modal Header -->
-            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950/50">
-                <div class="flex items-center gap-3">
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-start justify-between gap-4 bg-slate-50 dark:bg-slate-950/50">
+                <div class="flex flex-wrap items-center gap-3 min-w-0">
                     <span id="modal-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider"></span>
                     <h3 id="modal-title" class="font-bold text-lg text-primary-600 dark:text-primary-400"></h3>
-                    <span id="modal-item-no" class="bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded text-[10px] font-bold text-slate-600 dark:text-slate-400"></span>
+                    <span id="modal-item-count" class="bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded text-[10px] font-bold text-slate-600 dark:text-slate-400"></span>
                 </div>
                 <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
                     <i class="fas fa-times text-xl"></i>
@@ -167,329 +171,318 @@
 
             <!-- Modal Body -->
             <div class="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <!-- Coluna Principal -->
-                    <div class="lg:col-span-2 space-y-6">
-                        <section>
-                            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Descrição do Item</h4>
-                            <p id="modal-desc" class="text-slate-700 dark:text-slate-300 leading-relaxed text-sm"></p>
-                        </section>
-                        <section>
-                            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Objeto da Compra</h4>
-                            <p id="modal-objeto" class="text-slate-600 dark:text-slate-400 leading-relaxed text-sm italic"></p>
-                        </section>
-                    </div>
-
-                    <!-- Coluna Lateral -->
-                    <div class="space-y-4">
-                        <div class="bg-slate-50 dark:bg-slate-950/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-                            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Resultado</h4>
-                            <div class="space-y-3">
-                                <div>
-                                    <span class="text-[10px] text-slate-500 block">Vencedor</span>
-                                    <span id="modal-vencedor" class="text-sm font-bold break-words"></span>
-                                </div>
-                                <div>
-                                    <span class="text-[10px] text-slate-500 block">Valor Homologado</span>
-                                    <span id="modal-valor" class="text-lg font-black text-emerald-600"></span>
-                                </div>
-                                <div>
-                                    <span class="text-[10px] text-slate-500 block">Quantidade</span>
-                                    <span id="modal-qtd" class="text-sm font-medium"></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="px-2 space-y-2">
-                            <div class="flex justify-between text-xs">
-                                <span class="text-slate-500">Processo:</span>
-                                <span id="modal-processo" class="font-semibold"></span>
-                            </div>
-                            <div class="flex justify-between text-xs">
-                                <span class="text-slate-500">Modalidade:</span>
-                                <span id="modal-modalidade" class="font-semibold"></span>
-                            </div>
-                            <div class="flex justify-between text-xs">
-                                <span class="text-slate-500">Publicação:</span>
-                                <span id="modal-data" class="font-semibold"></span>
-                            </div>
-                        </div>
-                        
-                        <a id="modal-link" target="_blank" class="flex items-center justify-center gap-2 w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity mt-4">
-                            <i class="fas fa-external-link-alt"></i> Ver no PNCP
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
+                    <section class="lg:col-span-2 bg-slate-50 dark:bg-slate-950/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Objeto da contratação</h4>
+                        <p id="modal-objeto" class="text-slate-700 dark:text-slate-300 leading-relaxed text-sm"></p>
+                    </section>
+                    <section class="bg-slate-50 dark:bg-slate-950/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                        <div class="flex justify-between gap-3 text-xs"><span class="text-slate-500">Processo:</span><span id="modal-processo" class="font-semibold text-right"></span></div>
+                        <div class="flex justify-between gap-3 text-xs"><span class="text-slate-500">Modalidade:</span><span id="modal-modalidade" class="font-semibold text-right"></span></div>
+                        <div class="flex justify-between gap-3 text-xs"><span class="text-slate-500">Publicação:</span><span id="modal-data" class="font-semibold text-right"></span></div>
+                        <div class="flex justify-between gap-3 text-xs"><span class="text-slate-500">Total homologado:</span><span id="modal-valor" class="font-black text-emerald-600 text-right"></span></div>
+                        <a id="modal-link" target="_blank" rel="noopener" class="flex items-center justify-center gap-2 w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-2.5 rounded-lg font-bold text-xs hover:opacity-90 transition-opacity mt-3">
+                            <i class="fas fa-external-link-alt"></i> Ver processo no PNCP
                         </a>
+                    </section>
+                </div>
+
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest"><i class="fas fa-list-check mr-2"></i>Itens do processo</h4>
+                    <div class="relative w-full sm:w-72">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input id="modal-item-search" type="search" placeholder="Filtrar itens deste processo" class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg outline-none focus:ring-2 focus:ring-primary-500">
                     </div>
                 </div>
+                <div id="modal-items" class="space-y-3"></div>
             </div>
 
             <!-- Modal Footer (Navegação) -->
             <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950/50">
                 <button id="modal-prev" class="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-primary-600 transition-colors disabled:opacity-20">
-                    <i class="fas fa-arrow-left"></i> Anterior
+                    <i class="fas fa-arrow-left"></i> Processo anterior
                 </button>
                 <span id="modal-counter" class="text-xs font-medium text-slate-400"></span>
                 <button id="modal-next" class="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-primary-600 transition-colors disabled:opacity-20">
-                    Próximo <i class="fas fa-arrow-right"></i>
+                    Próximo processo <i class="fas fa-arrow-right"></i>
                 </button>
             </div>
         </div>
     </div>
 
     <script>
-        const DATA_URL = './dados.json';
+        const DATA_URLS = ['./dadospncp.json', './dados.json'];
         const PER_PAGE = 15;
-        
-        let allData = [], filteredData = [], search = '', statusFilter = 'all', yearFilter = 'all', modalidadeFilter = 'all', page = 1;
-        let currentModalIndex = -1;
 
-        // --- Utils ---
-        const normalize = (t) => t ? t.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : '';
-        
+        let allData = [], allProcesses = [], filteredProcesses = [], modalProcesses = [];
+        let search = '', statusFilter = 'all', yearFilter = 'all', modalidadeFilter = 'all', page = 1;
+        let currentModalIndex = -1, currentProcess = null;
+
+        // --- Utilitários ---
+        const normalize = (value) => value == null ? '' : value.toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+        const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const formatCurrency = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const formatNumber = (value) => Number(value || 0).toLocaleString('pt-BR', { maximumFractionDigits: 4 });
+        const formatDate = (value) => {
+            if (!value) return '-';
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? escapeHTML(value) : date.toLocaleDateString('pt-BR');
+        };
+        const searchTerms = (value) => [...value.matchAll(/"([^"]+)"|(\S+)/g)].map(m => normalize(m[1] || m[2])).filter(Boolean);
         const highlight = (text, term) => {
-            if (!term || !text) return text;
-            const regex = new RegExp(`(${term})`, 'gi');
-            return text.toString().replace(regex, `<mark>$1</mark>`);
+            const safe = escapeHTML(text);
+            const raw = term.trim().replace(/^"|"$/g, '');
+            if (!raw) return safe;
+            return safe.replace(new RegExp(`(${escapeRegExp(escapeHTML(raw))})`, 'gi'), '<mark>$1</mark>');
         };
 
         const getBadgeClass = (status) => {
-            const map = {
-                'Homologado': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-                'Fracassado': 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
-                'Em andamento': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-                'Divulgada': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-            };
-            return map[status] || 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400';
+            const value = normalize(status);
+            if (value === 'homologado') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
+            if (['fracassado', 'revogado', 'anulado'].includes(value)) return 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400';
+            if (['em andamento', 'divulgada', 'publicado'].includes(value)) return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+            if (['deserto', 'misto'].includes(value)) return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
+            return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400';
         };
 
-        // --- Theme ---
-        const initTheme = () => {
-            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-        };
+        function buildProcesses(items) {
+            const groups = new Map();
+            items.forEach((item, sourceIndex) => {
+                const key = item.linkPNCP || [item.ano, item.compra, item.processo, item.modalidade].map(v => v ?? '').join('|');
+                if (!groups.has(key)) {
+                    groups.set(key, {
+                        key, compra: item.compra || '-', processo: item.processo || '-', ano: item.ano || '-',
+                        modalidade: item.modalidade || '-', objeto: item.objeto || '-', orgao: item.orgao || '-',
+                        linkPNCP: item.linkPNCP || '#', dataPublicacao: item.dataPublicacao || '', items: []
+                    });
+                }
+                const process = groups.get(key);
+                process.items.push({ ...item, _sourceIndex: sourceIndex });
+                if (new Date(item.dataPublicacao || 0) > new Date(process.dataPublicacao || 0)) process.dataPublicacao = item.dataPublicacao;
+            });
+
+            return [...groups.values()].map(process => {
+                process.items.sort((a, b) => Number(a.itemNo || 0) - Number(b.itemNo || 0));
+                process.statuses = [...new Set(process.items.map(i => i.situacaoItem).filter(Boolean))];
+                process.status = process.statuses.length === 1 ? process.statuses[0] : (process.statuses.length ? 'Misto' : 'N/A');
+                process.totalHomologado = process.items.reduce((sum, item) => sum + Number(item.valorTotalHomologado || 0), 0);
+                process.totalEstimado = process.items.reduce((sum, item) => sum + Number(item.valorTotalEstimado || 0), 0);
+                process.searchText = normalize([
+                    process.compra, process.processo, process.ano, process.modalidade, process.objeto, process.orgao,
+                    ...process.items.flatMap(i => [i.itemNo, i.descricao, i.vencedor, i.cnpjVencedor, i.situacaoItem])
+                ].join(' '));
+                return process;
+            }).sort((a, b) => new Date(b.dataPublicacao || 0) - new Date(a.dataPublicacao || 0));
+        }
+
+        // --- Tema ---
+        function initTheme() {
+            const dark = localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            document.documentElement.classList.toggle('dark', dark);
+        }
 
         document.getElementById('theme-toggle').addEventListener('click', () => {
             document.documentElement.classList.toggle('dark');
             localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
         });
 
-        // --- Data ---
+        // --- Dados ---
+        async function fetchDataset() {
+            let lastError;
+            for (const url of DATA_URLS) {
+                try {
+                    const response = await fetch(`${url}?v=${Date.now()}`);
+                    if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
+                    return await response.json();
+                } catch (error) { lastError = error; }
+            }
+            throw lastError || new Error('Arquivo de dados não localizado.');
+        }
+
         async function loadData() {
             try {
-                const res = await fetch(`${DATA_URL}?v=${Date.now()}`);
-                const json = await res.json();
-                allData = json.data || [];
+                const json = await fetchDataset();
+                allData = Array.isArray(json) ? json : (json.data || []);
+                allProcesses = buildProcesses(allData);
                 populateFilters();
                 updateFiltered();
                 renderRecentCards();
                 render();
-            } catch (e) {
-                console.error(e);
-                document.getElementById('table-body').innerHTML = `<tr><td colspan="7" class="px-6 py-12 text-center text-rose-500">Erro ao carregar dados.</td></tr>`;
+            } catch (error) {
+                console.error(error);
+                document.getElementById('table-body').innerHTML = '<tr><td colspan="8" class="px-6 py-12 text-center text-rose-500">Erro ao carregar os dados. Confirme se dadospncp.json ou dados.json está na mesma pasta.</td></tr>';
             }
         }
 
         function populateFilters() {
-            const years = [...new Set(allData.map(i => i.ano))].filter(Boolean).sort((a,b) => b-a);
-            const statuses = [...new Set(allData.map(i => i.situacaoItem))].filter(Boolean).sort();
-            const modalidades = [...new Set(allData.map(i => i.modalidade))].filter(Boolean).sort();
-            
-            const ySelect = document.getElementById('year-select');
-            years.forEach(y => ySelect.innerHTML += `<option value="${y}">${y}</option>`);
-            
-            const sSelect = document.getElementById('status-select');
-            statuses.forEach(s => sSelect.innerHTML += `<option value="${s}">${s}</option>`);
-
-            const mSelect = document.getElementById('modalidade-select');
-            modalidades.forEach(m => mSelect.innerHTML += `<option value="${m}">${m}</option>`);
+            const addOptions = (id, values) => {
+                const select = document.getElementById(id);
+                values.forEach(value => select.insertAdjacentHTML('beforeend', `<option value="${escapeHTML(value)}">${escapeHTML(value)}</option>`));
+            };
+            addOptions('year-select', [...new Set(allProcesses.map(p => p.ano))].filter(Boolean).sort((a,b) => b-a));
+            addOptions('status-select', [...new Set(allData.map(i => i.situacaoItem))].filter(Boolean).sort());
+            addOptions('modalidade-select', [...new Set(allProcesses.map(p => p.modalidade))].filter(Boolean).sort());
         }
 
-        // --- Rendering ---
+        // --- Listagem de processos ---
         function renderRecentCards() {
             const container = document.getElementById('recent-items-container');
-            const recent = [...allData].sort((a, b) => {
-                const dateA = a.dataPublicacao ? new Date(a.dataPublicacao) : new Date(0);
-                const dateB = b.dataPublicacao ? new Date(b.dataPublicacao) : new Date(0);
-                return dateB - dateA;
-            }).slice(0, 4);
-            
-            container.innerHTML = recent.map(item => `
-                <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-primary-500 transition-colors cursor-pointer group" onclick="openModalByItemData(${JSON.stringify(item).replace(/"/g, '&quot;')})">
-                    <div class="flex justify-between items-start mb-2">
-                        <div class="flex flex-col">
-                            <span class="text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase">${item.compra}</span>
-                            <span class="text-[9px] font-bold text-slate-400">ITEM ${item.itemNo || '-'}</span>
+            container.innerHTML = allProcesses.slice(0, 4).map(process => `
+                <article class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-primary-500 transition-colors cursor-pointer group" onclick="openModalByKey('${encodeURIComponent(process.key)}')" tabindex="0" onkeydown="if(event.key==='Enter') openModalByKey('${encodeURIComponent(process.key)}')">
+                    <div class="flex justify-between items-start gap-2 mb-2">
+                        <div>
+                            <span class="text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase">${escapeHTML(process.compra)}</span>
+                            <span class="block text-[9px] font-bold text-slate-400">${escapeHTML(process.processo)}</span>
                         </div>
-                        <span class="text-[10px] text-slate-400">${item.ano}</span>
+                        <span class="text-[10px] text-slate-400">${formatDate(process.dataPublicacao)}</span>
                     </div>
-                    <p class="text-xs font-medium line-clamp-2 mb-3 group-hover:text-primary-600 transition-colors">${item.descricao}</p>
-                    <div class="flex items-center justify-between mt-auto">
-                        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${getBadgeClass(item.situacaoItem)}">${item.situacaoItem || 'N/A'}</span>
-                        <span class="text-[10px] font-black text-emerald-600">R$ ${item.valorTotalHomologado?.toLocaleString('pt-BR', {minimumFractionDigits:2}) || '0,00'}</span>
+                    <p class="text-xs font-medium line-clamp-2 mb-3 group-hover:text-primary-600 transition-colors">${escapeHTML(process.objeto)}</p>
+                    <div class="flex items-center justify-between gap-2 mt-auto">
+                        <span class="text-[10px] font-bold text-slate-500"><i class="fas fa-list mr-1"></i>${process.items.length} ${process.items.length === 1 ? 'item' : 'itens'}</span>
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${getBadgeClass(process.status)}">${escapeHTML(process.status)}</span>
                     </div>
-                </div>
-            `).join('');
+                </article>`).join('');
         }
 
         function render() {
-            const paginated = filteredData.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-            renderTable(paginated);
-            renderPagination(filteredData.length);
+            const start = (page - 1) * PER_PAGE;
+            renderTable(filteredProcesses.slice(start, start + PER_PAGE));
+            renderPagination(filteredProcesses.length);
         }
 
-        function renderTable(data) {
+        function renderTable(processes) {
             const tbody = document.getElementById('table-body');
-            if (!data.length) {
-                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-12 text-center text-slate-500">Nenhum resultado encontrado.</td></tr>`;
+            if (!processes.length) {
+                tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-12 text-center text-slate-500">Nenhum processo encontrado.</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = data.map((item, idx) => {
-                const globalIndex = (page - 1) * PER_PAGE + idx;
-                return `
-                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group" onclick="openModal(${globalIndex})">
-                    <td class="px-6 py-4 text-sm whitespace-nowrap text-slate-500">
-                        ${item.dataPublicacao ? new Date(item.dataPublicacao).toLocaleDateString('pt-BR') : '-'}
-                    </td>
-                    <td class="px-6 py-4 text-sm font-medium text-slate-400">
-                        ${item.ano || '-'}
-                    </td>
-                    <td class="px-6 py-4 text-sm font-bold text-slate-500">
-                        ${item.itemNo || '-'}
-                    </td>
-                    <td class="px-6 py-4 text-sm font-bold text-primary-600 dark:text-primary-400">
-                        ${highlight(item.compra, search)}
-                    </td>
-                    <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                        ${highlight(item.descricao, search)}
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${getBadgeClass(item.situacaoItem)}">
-                            ${item.situacaoItem || 'N/A'}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 text-sm">
-                        <div class="flex items-center gap-3">
-                            <button class="text-slate-300 group-hover:text-primary-500 transition-colors">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <a href="${item.linkPNCP}" target="_blank" onclick="event.stopPropagation()" class="text-slate-300 hover:text-primary-600 transition-colors">
-                                <i class="fas fa-external-link-alt"></i>
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-            `}).join('');
+            tbody.innerHTML = processes.map((process, index) => {
+                const globalIndex = (page - 1) * PER_PAGE + index;
+                return `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group" onclick="openModal(${globalIndex})">
+                    <td class="px-6 py-4 text-sm whitespace-nowrap text-slate-500">${formatDate(process.dataPublicacao)}</td>
+                    <td class="px-6 py-4 text-sm font-bold text-primary-600 dark:text-primary-400 whitespace-nowrap">${highlight(process.compra, search)}</td>
+                    <td class="px-6 py-4 text-sm font-medium text-slate-500 whitespace-nowrap">${highlight(process.processo, search)}</td>
+                    <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 min-w-[320px]"><span class="line-clamp-2">${highlight(process.objeto, search)}</span></td>
+                    <td class="px-6 py-4 text-sm font-bold text-center">${process.items.length}</td>
+                    <td class="px-6 py-4 text-sm font-bold text-emerald-600 whitespace-nowrap">${formatCurrency(process.totalHomologado)}</td>
+                    <td class="px-6 py-4"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${getBadgeClass(process.status)}">${escapeHTML(process.status)}</span></td>
+                    <td class="px-6 py-4 text-sm"><div class="flex items-center gap-3">
+                        <button type="button" title="Abrir processo" class="text-slate-300 group-hover:text-primary-500 transition-colors"><i class="fas fa-folder-open"></i></button>
+                        <a href="${escapeHTML(process.linkPNCP)}" target="_blank" rel="noopener" title="Ver no PNCP" onclick="event.stopPropagation()" class="text-slate-300 hover:text-primary-600 transition-colors"><i class="fas fa-external-link-alt"></i></a>
+                    </div></td>
+                </tr>`;
+            }).join('');
         }
 
         function renderPagination(total) {
             const totalPages = Math.ceil(total / PER_PAGE);
-            const info = document.getElementById('pagination-info');
-            const btns = document.getElementById('pagination-buttons');
-            
-            info.textContent = `Mostrando ${(page-1)*PER_PAGE+1} a ${Math.min(page*PER_PAGE, total)} de ${total} registros`;
-            
+            const first = total ? (page - 1) * PER_PAGE + 1 : 0;
+            document.getElementById('pagination-info').textContent = `Mostrando ${first} a ${Math.min(page * PER_PAGE, total)} de ${total} processos`;
+            const buttons = document.getElementById('pagination-buttons');
+            if (totalPages <= 1) { buttons.innerHTML = ''; return; }
             let html = '';
-            const addBtn = (p, label, active=false, disabled=false) => {
-                html += `<button onclick="goToPage(${p})" ${disabled ? 'disabled' : ''} 
-                    class="px-3 py-1.5 rounded-md text-sm font-medium transition-all ${active ? 'bg-primary-600 text-white' : 'hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 disabled:opacity-30'}">
-                    ${label}
-                </button>`;
+            const addButton = (target, label, active = false, disabled = false) => {
+                html += `<button type="button" onclick="goToPage(${target})" ${disabled ? 'disabled' : ''} class="px-3 py-1.5 rounded-md text-sm font-medium transition-all ${active ? 'bg-primary-600 text-white' : 'hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 disabled:opacity-30'}">${label}</button>`;
             };
-
-            addBtn(1, '<i class="fas fa-angle-double-left"></i>', false, page === 1);
-            addBtn(page - 1, '<i class="fas fa-angle-left"></i>', false, page === 1);
-            
-            for (let i = Math.max(1, page - 2); i <= Math.min(totalPages, page + 2); i++) {
-                addBtn(i, i, i === page);
-            }
-
-            addBtn(page + 1, '<i class="fas fa-angle-right"></i>', false, page === totalPages);
-            addBtn(totalPages, '<i class="fas fa-angle-double-right"></i>', false, page === totalPages);
-            
-            btns.innerHTML = html;
+            addButton(1, '<i class="fas fa-angle-double-left"></i>', false, page === 1);
+            addButton(page - 1, '<i class="fas fa-angle-left"></i>', false, page === 1);
+            for (let i = Math.max(1, page - 2); i <= Math.min(totalPages, page + 2); i++) addButton(i, i, i === page);
+            addButton(page + 1, '<i class="fas fa-angle-right"></i>', false, page === totalPages);
+            addButton(totalPages, '<i class="fas fa-angle-double-right"></i>', false, page === totalPages);
+            buttons.innerHTML = html;
         }
 
-        // --- Modal Logic ---
-        function openModal(index) {
+        // --- Modal do processo e seus itens ---
+        function renderModalItems(term = '') {
+            if (!currentProcess) return;
+            const normalizedTerm = normalize(term);
+            const items = currentProcess.items.filter(item => !normalizedTerm || normalize([item.itemNo, item.descricao, item.vencedor, item.cnpjVencedor, item.situacaoItem].join(' ')).includes(normalizedTerm));
+            const container = document.getElementById('modal-items');
+            if (!items.length) {
+                container.innerHTML = '<div class="py-8 text-center text-sm text-slate-500">Nenhum item encontrado neste processo.</div>';
+                return;
+            }
+            container.innerHTML = items.map((item, index) => `
+                <details class="item-card group rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden" ${items.length === 1 || (index === 0 && search) ? 'open' : ''}>
+                    <summary class="list-none cursor-pointer p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <div class="flex items-start gap-3">
+                            <span class="shrink-0 w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 flex items-center justify-center text-xs font-black">${escapeHTML(item.itemNo || '-')}</span>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+                                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Item ${escapeHTML(item.itemNo || '-')} · ${escapeHTML(item.unidade || 'Unidade não informada')}</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${getBadgeClass(item.situacaoItem)}">${escapeHTML(item.situacaoItem || 'N/A')}</span>
+                                </div>
+                                <p class="text-sm font-medium text-slate-700 dark:text-slate-200">${highlight(item.descricao, term || search)}</p>
+                                <div class="flex flex-wrap gap-x-5 gap-y-1 mt-2 text-[11px] text-slate-500">
+                                    <span><strong>Qtd.:</strong> ${formatNumber(item.quantidade)} ${escapeHTML(item.unidade || '')}</span>
+                                    <span><strong>Vencedor:</strong> ${escapeHTML(item.vencedor || 'Não informado')}</span>
+                                    <span class="font-bold text-emerald-600">${formatCurrency(item.valorTotalHomologado)}</span>
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-down item-chevron text-slate-400 mt-1"></i>
+                        </div>
+                    </summary>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 px-4 pb-4 pt-1 border-t border-slate-100 dark:border-slate-800 text-xs">
+                        <div class="bg-slate-50 dark:bg-slate-950/50 p-3 rounded-lg"><span class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Valor unit. estimado</span>${formatCurrency(item.valorUnitEstimado)}</div>
+                        <div class="bg-slate-50 dark:bg-slate-950/50 p-3 rounded-lg"><span class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Valor total estimado</span>${formatCurrency(item.valorTotalEstimado)}</div>
+                        <div class="bg-slate-50 dark:bg-slate-950/50 p-3 rounded-lg"><span class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Valor unit. homologado</span>${formatCurrency(item.valorUnitHomologado)}</div>
+                        <div class="bg-slate-50 dark:bg-slate-950/50 p-3 rounded-lg"><span class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Qtd. homologada</span>${formatNumber(item.qtdHomologada)} ${escapeHTML(item.unidade || '')}</div>
+                    </div>
+                </details>`).join('');
+        }
+
+        function openModal(index, collection = filteredProcesses) {
+            const process = collection[index];
+            if (!process) return;
+            modalProcesses = collection;
             currentModalIndex = index;
-            const item = filteredData[index];
-            if (!item) return;
+            currentProcess = process;
 
-            const modal = document.getElementById('details-modal');
-            
-            // Fill Data
-            document.getElementById('modal-title').textContent = item.compra;
-            document.getElementById('modal-item-no').textContent = `ITEM ${item.itemNo || '-'}`;
-            document.getElementById('modal-badge').textContent = item.situacaoItem || 'N/A';
-            document.getElementById('modal-badge').className = `px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${getBadgeClass(item.situacaoItem)}`;
-            
-            document.getElementById('modal-desc').innerHTML = highlight(item.descricao, search);
-            document.getElementById('modal-objeto').innerHTML = highlight(item.objeto, search);
-            
-            document.getElementById('modal-vencedor').innerHTML = highlight(item.vencedor, search) || 'Não informado';
-            document.getElementById('modal-valor').textContent = 'R$ ' + (item.valorTotalHomologado?.toLocaleString('pt-BR', {minimumFractionDigits:2}) || '0,00');
-            document.getElementById('modal-qtd').textContent = `${item.qtdHomologada || 0} ${item.unidade || ''}`;
-            
-            document.getElementById('modal-processo').textContent = item.processo || '-';
-            document.getElementById('modal-modalidade').textContent = item.modalidade || '-';
-            document.getElementById('modal-data').textContent = item.dataPublicacao || '-';
-            document.getElementById('modal-link').href = item.linkPNCP;
-
-            // Counter
-            document.getElementById('modal-counter').textContent = `${index + 1} de ${filteredData.length}`;
-
-            // Nav Buttons
+            document.getElementById('modal-title').textContent = process.compra;
+            document.getElementById('modal-item-count').textContent = `${process.items.length} ${process.items.length === 1 ? 'ITEM' : 'ITENS'}`;
+            document.getElementById('modal-badge').textContent = process.status;
+            document.getElementById('modal-badge').className = `px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${getBadgeClass(process.status)}`;
+            document.getElementById('modal-objeto').innerHTML = highlight(process.objeto, search);
+            document.getElementById('modal-processo').textContent = process.processo;
+            document.getElementById('modal-modalidade').textContent = process.modalidade;
+            document.getElementById('modal-data').textContent = formatDate(process.dataPublicacao);
+            document.getElementById('modal-valor').textContent = formatCurrency(process.totalHomologado);
+            document.getElementById('modal-link').href = process.linkPNCP;
+            document.getElementById('modal-counter').textContent = `${index + 1} de ${collection.length} processos`;
             document.getElementById('modal-prev').disabled = index === 0;
-            document.getElementById('modal-next').disabled = index === filteredData.length - 1;
-
-            // Show
-            modal.classList.remove('modal-hidden');
+            document.getElementById('modal-next').disabled = index === collection.length - 1;
+            document.getElementById('modal-item-search').value = '';
+            renderModalItems();
+            document.getElementById('details-modal').classList.remove('modal-hidden');
             document.body.style.overflow = 'hidden';
         }
 
-        function openModalByItemData(item) {
-            const index = filteredData.findIndex(i => i.compra === item.compra && i.itemNo === item.itemNo);
-            if (index !== -1) {
-                openModal(index);
-            } else {
-                filteredData.push(item);
-                openModal(filteredData.length - 1);
-            }
+        function openModalByKey(encodedKey) {
+            const key = decodeURIComponent(encodedKey);
+            let collection = filteredProcesses;
+            let index = collection.findIndex(p => p.key === key);
+            if (index < 0) { collection = allProcesses; index = collection.findIndex(p => p.key === key); }
+            if (index >= 0) openModal(index, collection);
         }
 
         function closeModal() {
             document.getElementById('details-modal').classList.add('modal-hidden');
             document.body.style.overflow = '';
         }
+        function nextProcess() { if (currentModalIndex < modalProcesses.length - 1) openModal(currentModalIndex + 1, modalProcesses); }
+        function prevProcess() { if (currentModalIndex > 0) openModal(currentModalIndex - 1, modalProcesses); }
 
-        function nextItem() {
-            if (currentModalIndex < filteredData.length - 1) {
-                openModal(currentModalIndex + 1);
-            }
-        }
-
-        function prevItem() {
-            if (currentModalIndex > 0) {
-                openModal(currentModalIndex - 1);
-            }
-        }
-
-        // --- Logic ---
+        // --- Busca e filtros ---
         function updateFiltered() {
-            const term = normalize(search);
-            filteredData = allData.filter(i => {
-                const mSearch = !term || [i.descricao, i.vencedor, i.compra, i.objeto, i.processo].some(v => normalize(v).includes(term));
-                const mStatus = statusFilter === 'all' || i.situacaoItem === statusFilter;
-                const mYear = yearFilter === 'all' || i.ano == yearFilter;
-                const mModalidade = modalidadeFilter === 'all' || i.modalidade === modalidadeFilter;
-                return mSearch && mStatus && mYear && mModalidade;
-            }).sort((a, b) => {
-                const dateA = a.dataPublicacao ? new Date(a.dataPublicacao) : new Date(0);
-                const dateB = b.dataPublicacao ? new Date(b.dataPublicacao) : new Date(0);
-                return dateB - dateA;
+            const terms = searchTerms(search);
+            filteredProcesses = allProcesses.filter(process => {
+                const matchesSearch = !terms.length || terms.every(term => process.searchText.includes(term));
+                const matchesStatus = statusFilter === 'all' || process.items.some(item => item.situacaoItem === statusFilter);
+                const matchesYear = yearFilter === 'all' || process.ano == yearFilter;
+                const matchesModalidade = modalidadeFilter === 'all' || process.modalidade === modalidadeFilter;
+                return matchesSearch && matchesStatus && matchesYear && matchesModalidade;
             });
         }
 
@@ -499,53 +492,30 @@
             updateFiltered();
             render();
         }
-
-        function goToPage(p) {
-            page = p;
+        function goToPage(target) {
+            const totalPages = Math.max(1, Math.ceil(filteredProcesses.length / PER_PAGE));
+            page = Math.min(Math.max(1, target), totalPages);
             render();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.querySelector('table').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
-        // --- Events ---
         document.getElementById('search-btn').addEventListener('click', executeSearch);
-        document.getElementById('search-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') executeSearch();
-        });
+        document.getElementById('search-input').addEventListener('keydown', event => { if (event.key === 'Enter') executeSearch(); });
+        document.getElementById('year-select').addEventListener('change', event => { yearFilter = event.target.value; page = 1; updateFiltered(); render(); });
+        document.getElementById('status-select').addEventListener('change', event => { statusFilter = event.target.value; page = 1; updateFiltered(); render(); });
+        document.getElementById('modalidade-select').addEventListener('change', event => { modalidadeFilter = event.target.value; page = 1; updateFiltered(); render(); });
+        document.getElementById('modal-item-search').addEventListener('input', event => renderModalItems(event.target.value));
+        document.getElementById('modal-next').addEventListener('click', nextProcess);
+        document.getElementById('modal-prev').addEventListener('click', prevProcess);
 
-        document.getElementById('year-select').addEventListener('change', (e) => {
-            yearFilter = e.target.value;
-            page = 1;
-            updateFiltered();
-            render();
-        });
-
-        document.getElementById('status-select').addEventListener('change', (e) => {
-            statusFilter = e.target.value;
-            page = 1;
-            updateFiltered();
-            render();
-        });
-
-        document.getElementById('modalidade-select').addEventListener('change', (e) => {
-            modalidadeFilter = e.target.value;
-            page = 1;
-            updateFiltered();
-            render();
-        });
-
-        document.getElementById('modal-next').addEventListener('click', nextItem);
-        document.getElementById('modal-prev').addEventListener('click', prevItem);
-
-        window.addEventListener('keydown', (e) => {
+        window.addEventListener('keydown', event => {
             const modal = document.getElementById('details-modal');
             if (modal.classList.contains('modal-hidden')) return;
-
-            if (e.key === 'Escape') closeModal();
-            if (e.key === 'ArrowRight') nextItem();
-            if (e.key === 'ArrowLeft') prevItem();
+            if (event.key === 'Escape') closeModal();
+            if (event.key === 'ArrowRight' && document.activeElement.id !== 'modal-item-search') nextProcess();
+            if (event.key === 'ArrowLeft' && document.activeElement.id !== 'modal-item-search') prevProcess();
         });
 
-        // --- Init ---
         initTheme();
         loadData();
     </script>
