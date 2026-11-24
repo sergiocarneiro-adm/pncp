@@ -1,6 +1,6 @@
 {
-    "geradoEm": "2026-11-23T12:18:02.274703",
-    "totalRegistros": 16508,
+    "geradoEm": "2026-11-24T13:53:46.152514",
+    "totalRegistros": 16510,
     "stats": {
         "totalItens": 0,
         "valorTotalEstimado": 0,
@@ -379693,6 +379693,52 @@
             "processo": "1140 / 2026",
             "dataPublicacao": "Mon Nov 23 2026 08:12:49 GMT-0300 (Brasilia Standard Time)",
             "dataResultado": ""
+        },
+        {
+            "orgao": "MUNICIPIO DE TEIXEIRA DE FREITAS",
+            "ano": 2026,
+            "compra": "2IL-186",
+            "modalidade": "Inexigibilidade",
+            "objeto": "Contratação da BANDA HIPERMETROPIA para atender as demandas da Secretaria Municipal de Cultura e Turismo, conforme Edital 014/2026.",
+            "itemNo": 1,
+            "descricao": "100200503 Banda Formada com no Mínimo 5 Integrantes Músicos: Música: Um vocal solo ou dividido em dupla em harmonia, com demais integrantes músicos instrumentistas. Para públicos e shows maiores. O repertório poderá ser único ou variado a ser combinado com a Contratante, para eventos de médio a grande porte. Duração: 3 horas de duração, com possibilidade de intervalos de até 15 minutos.",
+            "quantidade": 2.0,
+            "unidade": "SERV",
+            "valorUnitEstimado": 4000.0,
+            "valorTotalEstimado": 8000.0,
+            "vencedor": "66.596.219 LUIS ROBERTO BAUKAT",
+            "cnpjVencedor": "66596219000103",
+            "valorUnitHomologado": 4000.0,
+            "valorTotalHomologado": 8000.0,
+            "qtdHomologada": 2.0,
+            "situacaoItem": "Homologado",
+            "linkPNCP": "https://pncp.gov.br/app/editais/13650403000128/2026/523",
+            "processo": "1353/2026",
+            "dataPublicacao": "Tue Nov 24 2026 07:55:52 GMT-0300 (Brasilia Standard Time)",
+            "dataResultado": "Tue Nov 24 2026 00:00:00 GMT-0300 (Brasilia Standard Time)"
+        },
+        {
+            "orgao": "MUNICIPIO DE TEIXEIRA DE FREITAS",
+            "ano": 2026,
+            "compra": "2IL-187",
+            "modalidade": "Inexigibilidade",
+            "objeto": "Contratação de ED LEMOS para atender as demandas da Secretaria Municipal de Cultura e Turismo, conforme Edital 014/2026.",
+            "itemNo": 1,
+            "descricao": "100200505 Apresentação com 3 Pessoas no Palco (Trio):Música: Três artistas realizam a performance. O repertório deverá ser variado, podendo abranger gêneros como forró, MPB, samba, axé, sertanejo, pop, rock, entre outros, para eventos de pequeno porte, mantendo harmonia tradicional e presença cênica. Duração: 3 horas de duração, com possibilidade de intervalos de até 15 minutos.",
+            "quantidade": 2.0,
+            "unidade": "SERV",
+            "valorUnitEstimado": 3106.67,
+            "valorTotalEstimado": 6213.34,
+            "vencedor": "66.211.032 ADEMILSON GOMES VIANA",
+            "cnpjVencedor": "66211032000144",
+            "valorUnitHomologado": 3106.67,
+            "valorTotalHomologado": 6213.34,
+            "qtdHomologada": 2.0,
+            "situacaoItem": "Homologado",
+            "linkPNCP": "https://pncp.gov.br/app/editais/13650403000128/2026/524",
+            "processo": "1357/2026",
+            "dataPublicacao": "Tue Nov 24 2026 08:14:55 GMT-0300 (Brasilia Standard Time)",
+            "dataResultado": "Tue Nov 24 2026 00:00:00 GMT-0300 (Brasilia Standard Time)"
         }
     ]
 }
