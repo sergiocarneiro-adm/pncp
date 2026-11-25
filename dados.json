@@ -1,6 +1,6 @@
 {
-    "geradoEm": "2026-11-24T13:53:46.152514",
-    "totalRegistros": 16510,
+    "geradoEm": "2026-11-25T12:47:07.335616",
+    "totalRegistros": 16511,
     "stats": {
         "totalItens": 0,
         "valorTotalEstimado": 0,
@@ -379738,6 +379738,29 @@
             "linkPNCP": "https://pncp.gov.br/app/editais/13650403000128/2026/524",
             "processo": "1357/2026",
             "dataPublicacao": "Tue Nov 24 2026 08:14:55 GMT-0300 (Brasilia Standard Time)",
+            "dataResultado": "Tue Nov 24 2026 00:00:00 GMT-0300 (Brasilia Standard Time)"
+        },
+        {
+            "orgao": "MUNICIPIO DE TEIXEIRA DE FREITAS",
+            "ano": 2026,
+            "compra": "2IL-188",
+            "modalidade": "Inexigibilidade",
+            "objeto": "Contratação de MURILO GARANHÕES para atender as demandas da Secretaria Municipal de Cultura e Turismo, conforme Edital 014/2026.",
+            "itemNo": 1,
+            "descricao": "100200504 Apresentação com 4 Pessoas no Palco (Quarteto): Música: Quatro artistas realizam a performance. O repertório deverá ser variado, podendo abranger gêneros como\r\nforró, MPB, samba, axé, sertanejo, pop, rock, entre outros, para eventos de médio porte, com suporte harmônico e rítmico encorpado. Duração: 3 horas de duração, com possibilidade de\r\nintervalos de até 15 minutos.",
+            "quantidade": 2.0,
+            "unidade": "SERV",
+            "valorUnitEstimado": 3675.0,
+            "valorTotalEstimado": 7350.0,
+            "vencedor": "61.295.927 BEATRIZ SOUSA SILVA",
+            "cnpjVencedor": "61295927000190",
+            "valorUnitHomologado": 3675.0,
+            "valorTotalHomologado": 7350.0,
+            "qtdHomologada": 2.0,
+            "situacaoItem": "Homologado",
+            "linkPNCP": "https://pncp.gov.br/app/editais/13650403000128/2026/525",
+            "processo": "1356/2026",
+            "dataPublicacao": "Tue Nov 24 2026 09:45:35 GMT-0300 (Brasilia Standard Time)",
             "dataResultado": "Tue Nov 24 2026 00:00:00 GMT-0300 (Brasilia Standard Time)"
         }
     ]
